@@ -4,10 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boligsøk — Property Tracker</title>
+<!--
+  ============================================================
+  SUPABASE SETUP INSTRUCTIONS
+  ============================================================
+
+  1. Create a free Supabase project at https://supabase.com
+
+  2. In the SQL Editor, run this to create the properties table:
+
+     create table properties (
+       id text primary key,
+       data jsonb not null default '{}',
+       updated_at timestamptz default now()
+     );
+
+     alter table properties enable row level security;
+
+     create policy "Public read"  on properties for select using (true);
+     create policy "Public insert" on properties for insert with check (true);
+     create policy "Public update" on properties for update using (true);
+     create policy "Public delete" on properties for delete using (true);
+
+  3. Create a Storage bucket for images:
+     - Go to Storage in your Supabase dashboard
+     - Click "New bucket"
+     - Name it: property-images
+     - Toggle ON "Public bucket"
+     - Under Policies, add a policy for ALL operations with "true" expression
+
+     Or run this SQL:
+
+     insert into storage.buckets (id, name, public)
+     values ('property-images', 'property-images', true);
+
+     create policy "Anyone can upload" on storage.objects
+       for insert with check (bucket_id = 'property-images');
+     create policy "Anyone can read" on storage.objects
+       for select using (bucket_id = 'property-images');
+     create policy "Anyone can delete" on storage.objects
+       for delete using (bucket_id = 'property-images');
+
+  4. Copy your Project URL and anon (public) key from:
+     Settings → API → Project URL / Project API keys (anon public)
+
+  5. Paste them into the SUPABASE_URL and SUPABASE_ANON_KEY below.
+
+  6. Deploy this file to GitHub Pages or open locally.
+     Both you and your husband will share the same data.
+  ============================================================
+-->
+<!-- Supabase JS client (only external dependency, required for backend) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-/* ============================================================
-   RESET & VARIABLES
-   ============================================================ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#f6f4f1;--card:#ffffff;--border:#e6e2dc;--border-lt:#edeae5;
@@ -18,18 +67,12 @@
   --purple:#7a5e9e;--purple-lt:#f2eef8;--grey:#8a857e;--grey-lt:#f0ede9;
   --warm:#faf8f5;
   --r:8px;--r-lg:12px;
-  --sh:0 1px 3px rgba(0,0,0,.04);
-  --sh-md:0 3px 10px rgba(0,0,0,.05);
-  --sh-lg:0 10px 35px rgba(0,0,0,.08);
+  --sh:0 1px 3px rgba(0,0,0,.04);--sh-md:0 3px 10px rgba(0,0,0,.05);--sh-lg:0 10px 35px rgba(0,0,0,.08);
   --font:system-ui,-apple-system,'Segoe UI',sans-serif;
   --panel:420px;
 }
 html{font-size:15px;scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
-
-/* ============================================================
-   NAV
-   ============================================================ */
 .topnav{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;display:flex;align-items:center;padding:0 1.5rem;height:50px;gap:.8rem}
 .logo{font-size:1.1rem;font-weight:700;color:var(--accent);letter-spacing:-.02em;white-space:nowrap}
 .nav-tabs{display:flex;margin-left:.5rem}
@@ -37,10 +80,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .nav-tab:hover{color:var(--text2)}.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .nav-right{margin-left:auto;display:flex;gap:.35rem;align-items:center}
 .page{display:none}.page.active{display:block}
-
-/* ============================================================
-   BUTTONS
-   ============================================================ */
+/* Sync indicator */
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.3rem}
+.sync-dot.ok{background:var(--green)}.sync-dot.err{background:var(--red)}.sync-dot.loading{background:var(--orange);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-label{font-size:.68rem;color:var(--text3);display:flex;align-items:center;gap:.15rem;margin-right:.4rem;cursor:pointer;border:none;background:none;font-family:inherit}
+.sync-label:hover{color:var(--text2)}
+/* Buttons */
 .btn{display:inline-flex;align-items:center;gap:.3rem;padding:.38rem .75rem;border:1px solid var(--border);border-radius:var(--r);background:var(--card);color:var(--text2);font:inherit;font-size:.78rem;cursor:pointer;transition:all .12s;white-space:nowrap}
 .btn:hover{border-color:var(--text3);color:var(--text)}
 .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -50,43 +96,28 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .btn-icon:hover{color:var(--text);background:var(--grey-lt)}
 .btn-link{background:none;border:none;color:var(--accent);cursor:pointer;font:inherit;font-size:.78rem;font-weight:600;padding:.2rem 0;text-decoration:none;display:inline-flex;align-items:center;gap:.25rem}
 .btn-link:hover{color:var(--accent-hover);text-decoration:underline}
-
-/* ============================================================
-   LAYOUT
-   ============================================================ */
+/* Layout */
 .main-layout{display:grid;grid-template-columns:1fr var(--panel);min-height:calc(100vh - 50px)}
 .main-left{padding:1.1rem 1.3rem;overflow-y:auto}
 .main-right{background:var(--card);border-left:1px solid var(--border);overflow-y:auto;position:sticky;top:50px;height:calc(100vh - 50px)}
 .main-right-inner{padding:1.2rem}
-
-/* ============================================================
-   DASHBOARD
-   ============================================================ */
+/* Dashboard */
 .dash{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
 .dash-card{background:var(--card);border:1px solid var(--border-lt);border-radius:var(--r);padding:.55rem .75rem;box-shadow:var(--sh);min-width:100px;flex:1}
 .dash-card .dl{font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
 .dash-card .dv{font-size:1.05rem;font-weight:700;letter-spacing:-.01em;margin-top:.05rem}
 .dash-card .dv.sm{font-size:.82rem}
-
-/* ============================================================
-   FILTERS
-   ============================================================ */
+/* Filters */
 .toolbar{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.5rem;align-items:center}
 .search-box{flex:1;min-width:150px;padding:.38rem .65rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem;background:var(--card)}
 .search-box:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-light)}
 .fsel{padding:.38rem .45rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.75rem;background:var(--card);color:var(--text2);cursor:pointer}
 .fsel:focus{outline:none;border-color:var(--accent)}
-
-/* ============================================================
-   COMPARE BAR
-   ============================================================ */
+/* Compare */
 .compare-bar{background:var(--accent);color:#fff;padding:.4rem 1rem;display:none;align-items:center;justify-content:space-between;border-radius:var(--r);margin-bottom:.6rem;font-size:.8rem}
 .compare-bar.active{display:flex}
 .compare-bar .btn{color:#fff;border-color:rgba(255,255,255,.3);font-size:.73rem}
-
-/* ============================================================
-   TABLE
-   ============================================================ */
+/* Table */
 .table-wrap{background:var(--card);border:1px solid var(--border-lt);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh)}
 .table-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.8rem}
@@ -100,12 +131,8 @@ tr:last-child td{border-bottom:none}
 tbody tr{cursor:pointer;transition:background .08s}
 tbody tr:hover td{background:var(--warm)}
 tr.row-sel td{background:var(--accent-light) !important}
-
-/* Thumbnail */
 .tt{width:64px;height:48px;border-radius:6px;object-fit:cover;display:block}
 .tt-empty{width:64px;height:48px;border-radius:6px;background:var(--grey-lt);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:1.1rem}
-
-/* Cells */
 .c-main{line-height:1.35}
 .c-addr{font-weight:600;color:var(--text);display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .c-real{font-size:.72rem;color:var(--text2);display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -114,31 +141,13 @@ tr.row-sel td{background:var(--accent-light) !important}
 .c-num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--text2);font-size:.78rem}
 .c-mort{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .c-act{white-space:nowrap;display:flex;gap:.1rem}
-
-/* ============================================================
-   BADGES
-   ============================================================ */
+/* Badges */
 .badge{display:inline-block;padding:.1rem .45rem;border-radius:99px;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
-.badge-new{background:var(--blue-lt);color:var(--blue)}
-.badge-interested{background:var(--green-lt);color:var(--green)}
-.badge-viewed{background:var(--purple-lt);color:var(--purple)}
-.badge-bid-planned{background:var(--orange-lt);color:var(--orange)}
-.badge-bid-submitted{background:#fde8d0;color:#b06015}
-.badge-rejected{background:var(--red-lt);color:var(--red)}
-.badge-sold{background:var(--grey-lt);color:var(--grey)}
-.badge-not-relevant{background:var(--grey-lt);color:var(--text3)}
-.badge-above{background:var(--green-lt);color:var(--green)}
-.badge-at{background:var(--grey-lt);color:var(--grey)}
-.badge-below{background:var(--orange-lt);color:var(--orange)}
-.sdif{font-size:.73rem;font-weight:600;white-space:nowrap}
-.sdif.above{color:var(--green)}.sdif.below{color:var(--red)}.sdif.at{color:var(--grey)}
-.star-btn{background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--border);padding:0;line-height:1}
-.star-btn.active{color:#d9a832}.star-btn:hover{color:#d9a832}
+.badge-new{background:var(--blue-lt);color:var(--blue)}.badge-interested{background:var(--green-lt);color:var(--green)}.badge-viewed{background:var(--purple-lt);color:var(--purple)}.badge-bid-planned{background:var(--orange-lt);color:var(--orange)}.badge-bid-submitted{background:#fde8d0;color:#b06015}.badge-rejected{background:var(--red-lt);color:var(--red)}.badge-sold{background:var(--grey-lt);color:var(--grey)}.badge-not-relevant{background:var(--grey-lt);color:var(--text3)}.badge-above{background:var(--green-lt);color:var(--green)}.badge-at{background:var(--grey-lt);color:var(--grey)}.badge-below{background:var(--orange-lt);color:var(--orange)}
+.sdif{font-size:.73rem;font-weight:600;white-space:nowrap}.sdif.above{color:var(--green)}.sdif.below{color:var(--red)}.sdif.at{color:var(--grey)}
+.star-btn{background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--border);padding:0;line-height:1}.star-btn.active{color:#d9a832}.star-btn:hover{color:#d9a832}
 .cbx{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
-
-/* ============================================================
-   RIGHT PANEL
-   ============================================================ */
+/* Right panel */
 .rp-photo{width:100%;aspect-ratio:16/10;border-radius:var(--r-lg);object-fit:cover;display:block;background:var(--grey-lt);margin-bottom:.8rem}
 .rp-photo-empty{width:100%;aspect-ratio:16/10;border-radius:var(--r-lg);background:var(--grey-lt);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:2rem;margin-bottom:.8rem}
 .rp-thumbs{display:flex;gap:.3rem;margin-bottom:.8rem;flex-wrap:wrap}
@@ -155,16 +164,13 @@ tr.row-sel td{background:var(--accent-light) !important}
 .rp-procon div{font-size:.78rem;line-height:1.4}
 .rp-procon .rp-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:600;margin-bottom:.15rem}
 .rp-procon .pro{color:var(--green)}.rp-procon .con{color:var(--red)}
-
-/* Mortgage hero */
 .rp-hero{background:var(--accent-bg);border:1px solid var(--accent-light);border-radius:var(--r-lg);padding:.9rem;text-align:center;margin:.6rem 0}
 .rp-hero .rp-h-lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:600}
 .rp-hero .rp-h-val{font-size:1.9rem;font-weight:800;color:var(--accent);letter-spacing:-.03em;line-height:1.1}
 .rp-hero .rp-h-sub{font-size:.72rem;color:var(--text2);margin-top:.15rem}
 .rp-mrow{display:flex;justify-content:space-between;padding:.2rem 0;font-size:.77rem}
 .rp-mrow .ml{color:var(--text2)}.rp-mrow .mv{font-weight:600;font-variant-numeric:tabular-nums}
-.rp-mrow .mv.grn{color:var(--green)}.rp-mrow .mv.red{color:var(--red)}
-.rp-presets{display:flex;gap:.2rem;flex-wrap:wrap;margin:.3rem 0}
+.rp-presets{display:flex;gap:.2rem;flex-wrap:wrap}
 .rp-preset{padding:.18rem .45rem;font-size:.67rem;border:1px solid var(--border);border-radius:var(--r);background:var(--card);cursor:pointer;font-family:inherit;color:var(--text2)}
 .rp-preset:hover,.rp-preset.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
 .rp-inp{display:inline-flex;align-items:center;gap:.2rem;font-size:.72rem;color:var(--text2)}
@@ -172,10 +178,7 @@ tr.row-sel td{background:var(--accent-light) !important}
 .rp-inp input:focus{outline:none;border-color:var(--accent)}
 .rp-divider{border:none;border-top:1px solid var(--border-lt);margin:.4rem 0}
 .rp-actions{display:flex;gap:.35rem;margin-top:.6rem;flex-wrap:wrap}
-
-/* ============================================================
-   MODALS
-   ============================================================ */
+/* Modals */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:200;justify-content:center;align-items:flex-start;padding:1.5rem;overflow-y:auto}
 .overlay.open{display:flex}
 .modal{background:var(--card);border-radius:var(--r-lg);width:100%;max-width:600px;box-shadow:var(--sh-lg);margin-top:3vh;animation:mup .18s ease}
@@ -184,16 +187,14 @@ tr.row-sel td{background:var(--accent-light) !important}
 .mh h2{font-size:.95rem;font-weight:700}
 .mbody{padding:1.2rem;max-height:72vh;overflow-y:auto}
 .mfoot{padding:.7rem 1.2rem;border-top:1px solid var(--border-lt);display:flex;justify-content:flex-end;gap:.35rem}
-
-/* Simplified form */
+/* Form */
 .sf{display:grid;grid-template-columns:1fr 1fr;gap:.6rem .9rem}
 .sf .full{grid-column:1/-1}
 .sf label{display:block;font-size:.68rem;font-weight:600;color:var(--text3);margin-bottom:.12rem;text-transform:uppercase;letter-spacing:.04em}
-.sf input,.sf textarea{width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem;background:var(--card);color:var(--text)}
+.sf input,.sf select,.sf textarea{width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem;background:var(--card);color:var(--text)}
 .sf textarea{resize:vertical;min-height:60px}
-.sf input:focus,.sf textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-light)}
+.sf input:focus,.sf select:focus,.sf textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-light)}
 .sf-sec{grid-column:1/-1;font-size:.72rem;font-weight:700;color:var(--accent);margin-top:.3rem;padding-bottom:.15rem;border-bottom:1px solid var(--border-lt)}
-/* Image upload in form */
 .img-up{grid-column:1/-1;background:var(--warm);border:2px dashed var(--border);border-radius:var(--r-lg);padding:.8rem;text-align:center;cursor:pointer;transition:all .12s}
 .img-up:hover,.img-up.dragover{border-color:var(--accent);background:var(--accent-light)}
 .img-up .dt{font-size:.78rem;color:var(--text3)}.img-up .dt strong{color:var(--accent)}
@@ -204,24 +205,18 @@ tr.row-sel td{background:var(--accent-light) !important}
 .img-th.cover{border-color:var(--accent)}
 .img-th .img-del{position:absolute;top:1px;right:1px;width:16px;height:16px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .img-th .img-ctag{position:absolute;bottom:0;left:0;right:0;background:var(--accent);color:#fff;font-size:.52rem;text-align:center;text-transform:uppercase;font-weight:700}
-/* Finn import */
 .impbox{grid-column:1/-1;background:var(--warm);border:1px dashed var(--border);border-radius:var(--r);padding:.7rem}
 .impbox summary{font-size:.75rem;font-weight:600;color:var(--accent);cursor:pointer}
 .impbox .hint{font-size:.68rem;color:var(--text3);margin:.4rem 0 .2rem;line-height:1.3}
 .impbox textarea{width:100%;min-height:60px;padding:.35rem .5rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.78rem;resize:vertical;background:var(--card)}
 .impbox .iacts{display:flex;gap:.3rem;margin-top:.3rem;align-items:center}
 .ist{font-size:.7rem;margin-left:.2rem}.ist.ok{color:var(--green)}.ist.er{color:var(--red)}
-
-/* Compare */
 .ctable{width:100%;border-collapse:collapse;font-size:.78rem}
 .ctable th{background:var(--warm);text-align:left;padding:.4rem .5rem;font-size:.64rem;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)}
 .ctable td{padding:.4rem .5rem;border-bottom:1px solid var(--border-lt);vertical-align:top}
-
-/* Lightbox */
 .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;justify-content:center;align-items:center;cursor:pointer}
 .lightbox.open{display:flex}
 .lightbox img{max-width:92vw;max-height:92vh;border-radius:var(--r-lg)}
-
 /* Full mortgage page */
 .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .mc-card{background:var(--card);border:1px solid var(--border-lt);border-radius:var(--r-lg);padding:1rem;box-shadow:var(--sh)}
@@ -243,31 +238,17 @@ tr.row-sel td{background:var(--accent-light) !important}
 .mc-ct td{padding:.35rem .45rem;border-bottom:1px solid var(--border-lt);text-align:right;font-variant-numeric:tabular-nums}
 .mc-ct td:first-child{text-align:left;font-weight:500}
 .mc-ct tr.hl td{background:var(--accent-light);font-weight:600}
-
 .empty-state{text-align:center;padding:2.5rem 1.5rem;color:var(--text3)}
 .empty-state .icon{font-size:2.2rem;margin-bottom:.6rem;opacity:.3}
 .empty-state p{margin-bottom:.6rem;font-size:.85rem}
 .no-data{color:var(--text3);font-size:.78rem;text-align:center;padding:1.2rem}
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:.5rem 1.2rem;border-radius:var(--r);font-size:.8rem;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
 @media(min-width:1400px){:root{--panel:460px}}
 @media(max-width:1050px){:root{--panel:360px}}
-@media(max-width:900px){
-  .main-layout{grid-template-columns:1fr}
-  .main-right{position:static;height:auto;border-left:none;border-top:1px solid var(--border)}
-  .nav-right .hsm{display:none}
-}
-@media(max-width:650px){
-  .topnav{padding:0 .6rem;gap:.4rem}
-  .main-left{padding:.7rem}
-  .main-right-inner{padding:.8rem}
-  .dash{flex-direction:column}
-  .toolbar{flex-direction:column}.search-box{min-width:100%}
-  .sf{grid-template-columns:1fr}.sf .full{grid-column:1}
-  .mc-grid{grid-template-columns:1fr}
-}
+@media(max-width:900px){.main-layout{grid-template-columns:1fr}.main-right{position:static;height:auto;border-left:none;border-top:1px solid var(--border)}.nav-right .hsm{display:none}}
+@media(max-width:650px){.topnav{padding:0 .6rem;gap:.4rem}.main-left{padding:.7rem}.main-right-inner{padding:.8rem}.dash{flex-direction:column}.toolbar{flex-direction:column}.search-box{min-width:100%}.sf{grid-template-columns:1fr}.sf .full{grid-column:1}.mc-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -279,17 +260,17 @@ tr.row-sel td{background:var(--accent-light) !important}
     <button class="nav-tab" onclick="showPage('mortgage')">Full Calculator</button>
   </div>
   <div class="nav-right">
-    <button class="btn btn-sm hsm" onclick="exportCSV()">⬇CSV</button>
-    <button class="btn btn-sm hsm" onclick="exportJSON()">⬇JSON</button>
-    <button class="btn btn-sm hsm" onclick="document.getElementById('csvImp').click()">⬆CSV</button>
-    <button class="btn btn-sm hsm" onclick="document.getElementById('jsonImp').click()">⬆JSON</button>
-    <input type="file" id="csvImp" accept=".csv" style="display:none" onchange="importCSV(event)">
+    <!-- Sync status indicator — click to refresh from Supabase -->
+    <button class="sync-label" id="syncBtn" onclick="loadFromSupabase()" title="Click to refresh from server">
+      <span class="sync-dot" id="syncDot"></span><span id="syncText">…</span>
+    </button>
+    <button class="btn btn-sm hsm" onclick="exportJSON()">⬇ Backup</button>
+    <button class="btn btn-sm hsm" onclick="document.getElementById('jsonImp').click()">⬆ Restore</button>
     <input type="file" id="jsonImp" accept=".json" style="display:none" onchange="importJSON(event)">
     <button class="btn btn-primary btn-sm" onclick="openForm()">+ Add</button>
   </div>
 </div>
 
-<!-- ===== PAGE: TRACKER ===== -->
 <div class="page active" id="page-tracker">
 <div class="main-layout">
   <div class="main-left">
@@ -310,7 +291,6 @@ tr.row-sel td{background:var(--accent-light) !important}
 </div>
 </div>
 
-<!-- ===== PAGE: FULL MORTGAGE ===== -->
 <div class="page" id="page-mortgage">
 <div style="max-width:1000px;margin:0 auto;padding:1.3rem">
   <div class="mc-grid">
@@ -336,11 +316,10 @@ tr.row-sel td{background:var(--accent-light) !important}
 </div>
 </div>
 
-<!-- ===== MODALS ===== -->
 <div class="overlay" id="formOv" onclick="if(event.target===this)closeForm()">
   <div class="modal"><div class="mh"><h2 id="formTitle">Add Property</h2><button class="btn-icon" onclick="closeForm()">✕</button></div>
     <div class="mbody"><div class="sf" id="formGrid"></div></div>
-    <div class="mfoot"><button class="btn" onclick="closeForm()">Cancel</button><button class="btn btn-primary" onclick="saveProp()">Save</button></div>
+    <div class="mfoot"><button class="btn" onclick="closeForm()">Cancel</button><button class="btn btn-primary" id="saveBtn" onclick="saveProp()">Save</button></div>
   </div>
 </div>
 <div class="overlay" id="cmpOv" onclick="if(event.target===this)closeCmpM()">
@@ -349,67 +328,204 @@ tr.row-sel td{background:var(--accent-light) !important}
   </div>
 </div>
 <div class="lightbox" id="lb" onclick="this.classList.remove('open')"><img id="lbImg" src=""></div>
+<div class="toast" id="toast"></div>
 
 <script>
 /* ============================================================
-   DATA
+   SUPABASE CONFIG — PASTE YOUR CREDENTIALS HERE
    ============================================================ */
-var STATUSES=['New','Interested','Viewed','Bid planned','Bid submitted','Rejected','Sold to others','Not relevant'];
-var FORM_FIELDS=[
-  {k:'finnLink',l:'Finn Link',t:'url',full:1,sec:''},
-  {k:'address',l:'Address',t:'text',sec:''},
-  {k:'realtor',l:'Realtor',t:'text',sec:''},
-  {k:'realtorAgency',l:'Realtor Agency',t:'text',sec:''},
-  {k:'askingPrice',l:'Asking Price (NOK)',t:'number',sec:''},
-  {k:'soldPrice',l:'Sold Price (NOK)',t:'number',sec:''},
-  {k:'status',l:'Status',t:'status',sec:''},
-  {k:'dateAdded',l:'Date Added',t:'date',sec:''},
-  {k:'realtorNotes',l:'Notes on Realtor Conversation',t:'textarea',full:1,sec:'notes'},
-  {k:'pros',l:'Our Pros',t:'textarea',full:1,sec:''},
-  {k:'cons',l:'Our Cons',t:'textarea',full:1,sec:''}
-];
-// All keys we persist (including legacy)
-var ALL_KEYS=['id','favorite','finnLink','address','municipality','realtor','realtorAgency','propertyType','status','priority','askingPrice','estimatedFinal','felleskostnader','estimatedReno','soldPrice','soldDate','areaSqm','pricePerSqm','plotSize','bedrooms','bathrooms','yearBuilt','dateAdded','viewingDate','conditionNotes','viewingNotes','realtorNotes','pros','cons','tg2','tg3','images'];
+var SUPABASE_URL  = 'https://rheqgfdlgpulojswldcc.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_NxiiQblnOWcAddzI6qyBZw_beJ0pBI9';
+var STORAGE_BUCKET = 'property-images';
 
-var COLS=[
+/* ============================================================
+   SUPABASE CLIENT INIT
+   ============================================================ */
+var sb = null;  // supabase client
+var sbOk = false; // connection status
+function initSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.warn('Supabase not configured — using localStorage fallback.');
+    setSyncStatus('err', 'No config');
+    return;
+  }
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    sbOk = true;
+    setSyncStatus('ok', 'Connected');
+  } catch (e) {
+    console.error('Supabase init failed:', e);
+    setSyncStatus('err', 'Init failed');
+  }
+}
+
+/* ============================================================
+   SYNC STATUS UI
+   ============================================================ */
+function setSyncStatus(state, text) {
+  var dot = document.getElementById('syncDot');
+  var lbl = document.getElementById('syncText');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = text;
+}
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function () { el.classList.remove('show'); }, 2200);
+}
+
+/* ============================================================
+   DATA LOAD — Supabase primary, localStorage fallback
+   ============================================================ */
+var STATUSES = ['New','Interested','Viewed','Bid planned','Bid submitted','Rejected','Sold to others','Not relevant'];
+var ALL_KEYS = ['id','favorite','finnLink','address','municipality','realtor','realtorAgency','propertyType','status','priority','askingPrice','estimatedFinal','felleskostnader','estimatedReno','soldPrice','soldDate','areaSqm','pricePerSqm','plotSize','bedrooms','bathrooms','yearBuilt','dateAdded','viewingDate','conditionNotes','viewingNotes','realtorNotes','pros','cons','tg2','tg3','images'];
+var FORM_FIELDS = [
+  {k:'finnLink',l:'Finn Link',t:'url',full:1},
+  {k:'address',l:'Address',t:'text'},{k:'realtor',l:'Realtor',t:'text'},
+  {k:'realtorAgency',l:'Realtor Agency',t:'text'},
+  {k:'askingPrice',l:'Asking Price (NOK)',t:'number'},{k:'soldPrice',l:'Sold Price (NOK)',t:'number'},
+  {k:'status',l:'Status',t:'status'},{k:'dateAdded',l:'Date Added',t:'date'},
+  {k:'realtorNotes',l:'Notes on Realtor Conversation',t:'textarea',full:1,sec:'notes'},
+  {k:'pros',l:'Our Pros',t:'textarea',full:1},{k:'cons',l:'Our Cons',t:'textarea',full:1}
+];
+var COLS = [
   {k:'_fav',l:'★',w:'26px'},{k:'_cb',l:'',w:'26px'},{k:'_img',l:'',w:'72px'},
   {k:'address',l:'Property',sort:1},{k:'askingPrice',l:'Asking',sort:1},
   {k:'soldPrice',l:'Sold',sort:1},{k:'_diff',l:'Diff',sort:1},
-  {k:'_mort',l:'Monthly',sort:1},
-  {k:'status',l:'Status',sort:1},
+  {k:'_mort',l:'Monthly',sort:1},{k:'status',l:'Status',sort:1},
   {k:'_act',l:'',w:'56px'}
 ];
 
-var props=[],editId=null,sortCol='dateAdded',sortDir='desc',cmpSet=new Set(),selId=null,tempImgs=[];
-var mpDP=10,mpRate=7,mpTerm=30;
+var props = [], editId = null, sortCol = 'dateAdded', sortDir = 'desc';
+var cmpSet = new Set(), selId = null, tempImgs = [];
+var mpDP = 10, mpRate = 7, mpTerm = 30;
+
+/* Load from Supabase, fallback to localStorage */
+async function loadFromSupabase() {
+  if (!sb) { loadLocal(); renderTable(); return; }
+  setSyncStatus('loading', 'Syncing…');
+  try {
+    var { data, error } = await sb.from('properties').select('*').order('updated_at', { ascending: false });
+    if (error) throw error;
+    props = data.map(function (row) {
+      var p = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+      p.id = row.id;
+      return p;
+    });
+    // Cache to localStorage as fallback
+    try { localStorage.setItem('boligsok_props', JSON.stringify(props)); } catch (e) {}
+    setSyncStatus('ok', 'Synced');
+    toast('Loaded ' + props.length + ' properties');
+  } catch (e) {
+    console.error('Supabase load failed:', e);
+    setSyncStatus('err', 'Offline');
+    loadLocal();
+    toast('Offline — using local cache');
+  }
+  renderTable();
+}
+
+function loadLocal() {
+  try { props = JSON.parse(localStorage.getItem('boligsok_props') || '[]'); } catch (e) { props = []; }
+  if (!props.length) seedDemo();
+}
+
+/* Save single property to Supabase */
+async function saveToSupabase(p) {
+  if (!sb) { saveLocal(); return; }
+  setSyncStatus('loading', 'Saving…');
+  try {
+    var row = { id: p.id, data: p, updated_at: new Date().toISOString() };
+    var { error } = await sb.from('properties').upsert(row, { onConflict: 'id' });
+    if (error) throw error;
+    setSyncStatus('ok', 'Saved');
+  } catch (e) {
+    console.error('Supabase save failed:', e);
+    setSyncStatus('err', 'Save failed');
+    toast('Save failed — changes cached locally');
+  }
+  saveLocal(); // always keep local cache
+}
+
+/* Delete from Supabase */
+async function deleteFromSupabase(id) {
+  if (!sb) return;
+  try {
+    await sb.from('properties').delete().eq('id', id);
+    // Also delete any images in storage for this property
+    try {
+      var { data } = await sb.storage.from(STORAGE_BUCKET).list(id + '/');
+      if (data && data.length) {
+        var paths = data.map(function (f) { return id + '/' + f.name; });
+        await sb.storage.from(STORAGE_BUCKET).remove(paths);
+      }
+    } catch (e) {}
+  } catch (e) { console.error('Supabase delete failed:', e); }
+}
+
+function saveLocal() {
+  try { localStorage.setItem('boligsok_props', JSON.stringify(props)); } catch (e) {}
+}
 
 /* ============================================================
-   STORAGE
+   IMAGE UPLOAD TO SUPABASE STORAGE
    ============================================================ */
-function load(){try{props=JSON.parse(localStorage.getItem('boligsok_props')||'[]')}catch(e){props=[]}if(!props.length)seedDemo()}
-function save(){try{localStorage.setItem('boligsok_props',JSON.stringify(props))}catch(e){alert('Storage full — export a JSON backup.')}}
+async function uploadImage(propId, file) {
+  // Compress first
+  return new Promise(function (resolve) {
+    compressImg(file, 800, 0.7, async function (dataUrl) {
+      if (!sb) {
+        // No Supabase — store as data URL (localStorage fallback)
+        resolve({ id: gid(), name: file.name, data: dataUrl, cover: false });
+        return;
+      }
+      try {
+        // Convert data URL to blob for upload
+        var resp = await fetch(dataUrl);
+        var blob = await resp.blob();
+        var path = propId + '/' + gid() + '.jpg';
+        var { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+        if (error) throw error;
+        var { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+        resolve({ id: gid(), name: file.name, data: urlData.publicUrl, path: path, cover: false });
+      } catch (e) {
+        console.error('Image upload failed:', e);
+        toast('Image upload failed — stored locally');
+        resolve({ id: gid(), name: file.name, data: dataUrl, cover: false });
+      }
+    });
+  });
+}
+
+async function deleteStorageImage(img) {
+  if (!sb || !img.path) return;
+  try { await sb.storage.from(STORAGE_BUCKET).remove([img.path]); } catch (e) {}
+}
+
+/* ============================================================
+   DEMO DATA
+   ============================================================ */
+function seedDemo() {
+  props = [
+    {id:'d1',favorite:false,finnLink:'https://finn.no/realestate/homes/ad.html?finnkode=123456',address:'Solveien 14, Sandnes',realtor:'Kristian Berg',realtorAgency:'DNB Eiendom',status:'Interested',askingPrice:'6500000',soldPrice:'',soldDate:'',dateAdded:'2026-03-15',realtorNotes:'Seller wants quick sale, already bought new house. Flexible on price. Viewing Monday 18:00.',pros:'Big plot (650m²), good layout, 4 bedrooms, quiet street, close to barnehage',cons:'Bathroom needs update within 5 years, TG2 on ventilation',images:[]},
+    {id:'d2',favorite:true,finnLink:'',address:'Granveien 8B, Sandnes',realtor:'Marte Johansen',realtorAgency:'Eie Eiendom',status:'Sold to others',askingPrice:'5200000',soldPrice:'5450000',soldDate:'2026-03-10',dateAdded:'2026-02-20',realtorNotes:'Sold above asking. 4 bidders, went fast. Agent said similar homes expected 5.3–5.5M.',pros:'Modern kitchen, low maintenance, move-in ready',cons:'Small plot, shared wall noise, tight parking',images:[]},
+    {id:'d3',favorite:false,finnLink:'',address:'Fjordgata 22, Stavanger',realtor:'Anders Nilsen',realtorAgency:'PrivatMegleren',status:'Sold to others',askingPrice:'8900000',soldPrice:'8650000',soldDate:'2026-03-05',dateAdded:'2026-02-10',realtorNotes:'Sold below asking. TG3 on electrical scared buyers. Renovation 400-600k. Agent confirmed hard to sell.',pros:'Fjord view, large rooms, 5 bedrooms, great location',cons:'Major electrical redo (TG3), expensive renovation, old drainage',images:[]}
+  ];
+  saveLocal();
+  // If Supabase connected, push demo data
+  if (sb) props.forEach(function (p) { saveToSupabase(p); });
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
 function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmt(n){if(n==null||n==='')return'—';return Number(n).toLocaleString('nb-NO')}
 function fp(n){if(n==null||n==='')return'—';var v=Number(n);if(!v)return'—';if(v>=1e6)return(v/1e6).toFixed(2).replace('.',',')+' M';return v.toLocaleString('nb-NO')}
 function fk(n){if(!n)return'—';var v=Number(n);if(!v)return'—';return(v>0?'+':'')+Math.round(v/1000).toLocaleString('nb-NO')+'k'}
 function mortCalc(price,dpPct,rate,term){var down=Math.round(price*(dpPct/100)),loan=price-down;if(loan<=0)return{down:0,loan:0,monthly:0};var mr=rate/100/12,n=term*12,m=0;if(mr>0&&n>0)m=loan*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)m=loan/n;return{down:down,loan:loan,monthly:Math.round(m)}}
-
-/* ============================================================
-   DEMO
-   ============================================================ */
-function seedDemo(){
-  props=[
-    {id:'d1',favorite:false,finnLink:'https://finn.no/realestate/homes/ad.html?finnkode=123456',address:'Solveien 14, Sandnes',realtor:'Kristian Berg',realtorAgency:'DNB Eiendom',status:'Interested',askingPrice:'6500000',soldPrice:'',soldDate:'',dateAdded:'2026-03-15',realtorNotes:'Seller wants quick sale, already bought new house. Flexible on price. Viewing Monday 18:00.',pros:'Big plot (650m²), good layout, 4 bedrooms, quiet street, close to barnehage',cons:'Bathroom needs update within 5 years, TG2 on ventilation',images:[]},
-    {id:'d2',favorite:true,finnLink:'',address:'Granveien 8B, Sandnes',realtor:'Marte Johansen',realtorAgency:'Eie Eiendom',status:'Sold to others',askingPrice:'5200000',soldPrice:'5450000',soldDate:'2026-03-10',dateAdded:'2026-02-20',realtorNotes:'Sold above asking. 4 bidders, went fast. Agent said similar homes in area expected 5.3–5.5M.',pros:'Modern kitchen, low maintenance, move-in ready',cons:'Small plot, shared wall noise, tight parking',images:[]},
-    {id:'d3',favorite:false,finnLink:'',address:'Fjordgata 22, Stavanger',realtor:'Anders Nilsen',realtorAgency:'PrivatMegleren',status:'Sold to others',askingPrice:'8900000',soldPrice:'8650000',soldDate:'2026-03-05',dateAdded:'2026-02-10',realtorNotes:'Sold below asking. TG3 on electrical scared buyers. Renovation cost est. 400-600k. Agent confirmed hard to sell.',pros:'Fjord view, large rooms, 5 bedrooms, great location',cons:'Major electrical redo needed (TG3), expensive renovation, old drainage',images:[]}
-  ];
-  save();
-}
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
 function sdiff(p){var a=Number(p.askingPrice),s=Number(p.soldPrice);if(!a||!s)return null;return{d:s-a,pct:((s-a)/a)*100}}
 function sdlbl(p){var d=sdiff(p);if(!d)return'';var cls=d.d>0?'above':d.d<0?'below':'at';return'<span class="sdif '+cls+'">'+fk(d.d)+'</span>'}
 function scat(p){var d=sdiff(p);if(!d)return null;return d.d>0?'above':d.d<0?'below':'at'}
@@ -440,10 +556,7 @@ function dc(l,v,sm,st){return'<div class="dash-card"><div class="dl">'+l+'</div>
 /* ============================================================
    FILTERS
    ============================================================ */
-function popFilters(){
-  var rs={},ra=[];props.forEach(function(p){var key=p.realtorAgency||p.realtor;if(key&&!rs[key]){ra.push(key);rs[key]=1}});ra.sort();
-  fsel('fStatus',STATUSES);fsel('fRealtor',ra);
-}
+function popFilters(){var rs={},ra=[];props.forEach(function(p){var key=p.realtorAgency||p.realtor;if(key&&!rs[key]){ra.push(key);rs[key]=1}});ra.sort();fsel('fStatus',STATUSES);fsel('fRealtor',ra)}
 function fsel(id,opts){var el=document.getElementById(id),cur=el.value,first=el.options[0].textContent;el.innerHTML='<option value="">'+first+'</option>'+opts.map(function(o){return'<option value="'+o+'">'+o+'</option>'}).join('');el.value=cur}
 function clearFilters(){document.getElementById('searchBox').value='';['fStatus','fRealtor','fSold'].forEach(function(id){document.getElementById(id).value=''});renderTable()}
 function getFiltered(){
@@ -457,12 +570,7 @@ function getFiltered(){
   else if(v==='above')list=list.filter(function(p){return scat(p)==='above'});
   else if(v==='below')list=list.filter(function(p){return scat(p)==='below'});
   var nc=['askingPrice','soldPrice'];
-  list.sort(function(a,b){var va,vb;
-    if(sortCol==='_diff'){var da=sdiff(a),db=sdiff(b);va=da?da.pct:-99999;vb=db?db.pct:-99999}
-    else if(sortCol==='_mort'){va=Number(a.askingPrice)||0;vb=Number(b.askingPrice)||0}
-    else if(nc.indexOf(sortCol)>=0){va=Number(a[sortCol])||0;vb=Number(b[sortCol])||0}
-    else{va=(a[sortCol]||'').toString().toLowerCase();vb=(b[sortCol]||'').toString().toLowerCase()}
-    if(va<vb)return sortDir==='asc'?-1:1;if(va>vb)return sortDir==='asc'?1:-1;return 0});
+  list.sort(function(a,b){var va,vb;if(sortCol==='_diff'){var da=sdiff(a),db=sdiff(b);va=da?da.pct:-99999;vb=db?db.pct:-99999}else if(sortCol==='_mort'){va=Number(a.askingPrice)||0;vb=Number(b.askingPrice)||0}else if(nc.indexOf(sortCol)>=0){va=Number(a[sortCol])||0;vb=Number(b[sortCol])||0}else{va=(a[sortCol]||'').toString().toLowerCase();vb=(b[sortCol]||'').toString().toLowerCase()}if(va<vb)return sortDir==='asc'?-1:1;if(va>vb)return sortDir==='asc'?1:-1;return 0});
   return list;
 }
 
@@ -481,12 +589,13 @@ function renderTable(){
   tbody.innerHTML=list.map(function(p){
     var isSel=p.id===selId,isCmp=cmpSet.has(p.id);
     var cover=(p.images&&p.images.length)?p.images.find(function(i){return i.cover})||p.images[0]:null;
-    var thm=cover?'<img class="tt" src="'+cover.data+'" onclick="event.stopPropagation();openLB(\''+cover.data.replace(/'/g,"\\'")+'\')" title="View">':'<div class="tt-empty">🏠</div>';
+    var imgSrc=cover?cover.data:'';
+    var thm=imgSrc?'<img class="tt" src="'+esc(imgSrc)+'" onclick="event.stopPropagation();openLB(\''+imgSrc.replace(/'/g,"\\'")+'\')" title="View">':'<div class="tt-empty">🏠</div>';
     var mc=mortCalc(Number(p.askingPrice)||0,mpDP,mpRate,mpTerm);
     var notes=p.realtorNotes||'';var notesPrev=notes.length>60?notes.substring(0,60)+'…':notes;
     var agency=p.realtorAgency?esc(p.realtorAgency):'';
     var realtorLine=esc(p.realtor||'')+(agency?' · '+agency:'');
-    return'<tr class="'+(isSel?'row-sel':'')+(isCmp?' cmp-sel':'')+'" onclick="selProp(\''+p.id+'\')">'+
+    return'<tr class="'+(isSel?'row-sel':'')+'" onclick="selProp(\''+p.id+'\')">'+
       '<td><button class="star-btn '+(p.favorite?'active':'')+'" onclick="event.stopPropagation();toggleFav(\''+p.id+'\')">★</button></td>'+
       '<td><input type="checkbox" class="cbx" '+(isCmp?'checked':'')+' onclick="event.stopPropagation()" onchange="toggleCmp(\''+p.id+'\')"></td>'+
       '<td>'+thm+'</td>'+
@@ -502,7 +611,7 @@ function renderTable(){
 }
 function selProp(id){selId=id;renderTable()}
 function tSort(k){if(sortCol===k)sortDir=sortDir==='asc'?'desc':'asc';else{sortCol=k;sortDir='asc'}renderTable()}
-function toggleFav(id){var p=props.find(function(x){return x.id===id});if(p){p.favorite=!p.favorite;save();renderTable()}}
+function toggleFav(id){var p=props.find(function(x){return x.id===id});if(p){p.favorite=!p.favorite;saveToSupabase(p);renderTable()}}
 function toggleCmp(id){if(cmpSet.has(id))cmpSet.delete(id);else if(cmpSet.size<4)cmpSet.add(id);renderTable()}
 function clearCmp(){cmpSet.clear();renderTable()}
 function updCmpBar(){document.getElementById('cmpCount').textContent=cmpSet.size;document.getElementById('cmpBar').classList.toggle('active',cmpSet.size>0)}
@@ -513,38 +622,26 @@ function updCmpBar(){document.getElementById('cmpCount').textContent=cmpSet.size
 function renderPanel(){
   var panel=document.getElementById('rpanel');
   var p=props.find(function(x){return x.id===selId});
-  if(!p){panel.innerHTML='<div style="color:var(--text3);padding:2rem;text-align:center;font-size:.82rem">Select a property to see details and mortgage.</div>';return}
+  if(!p){panel.innerHTML='<div style="color:var(--text3);padding:2rem;text-align:center;font-size:.82rem">Select a property.</div>';return}
   var cover=(p.images&&p.images.length)?p.images.find(function(i){return i.cover})||p.images[0]:null;
   var mc=mortCalc(Number(p.askingPrice)||0,mpDP,mpRate,mpTerm);
   var h='';
-  // Photo
-  if(cover)h+='<img class="rp-photo" src="'+cover.data+'" onclick="openLB(\''+cover.data.replace(/'/g,"\\'")+'\')" style="cursor:pointer">';
+  if(cover)h+='<img class="rp-photo" src="'+esc(cover.data)+'" onclick="openLB(\''+cover.data.replace(/'/g,"\\'")+'\')" style="cursor:pointer">';
   else h+='<div class="rp-photo-empty">🏠</div>';
-  // Extra thumbs
-  if(p.images&&p.images.length>1){h+='<div class="rp-thumbs">';p.images.forEach(function(img,i){h+='<img class="rp-thumb'+(img===(cover)?' active':'')+'" src="'+img.data+'" onclick="openLB(\''+img.data.replace(/'/g,"\\'")+'\')">'});h+='</div>'}
-  // Info
+  if(p.images&&p.images.length>1){h+='<div class="rp-thumbs">';p.images.forEach(function(img){h+='<img class="rp-thumb'+(img===cover?' active':'')+'" src="'+esc(img.data)+'" onclick="openLB(\''+img.data.replace(/'/g,"\\'")+'\')">'});h+='</div>'}
   h+='<div class="rp-addr">'+esc(p.address)+'</div>';
   var agency=p.realtorAgency?esc(p.realtorAgency):'';
   h+='<div class="rp-sub"><span>'+esc(p.realtor||'—')+(agency?' · '+agency:'')+'</span></div>';
   h+='<div class="rp-sub"><span style="font-weight:600">'+fp(p.askingPrice)+' NOK</span></div>';
   if(p.status)h+='<div style="margin:.25rem 0"><span class="'+bclass(p.status)+'">'+esc(p.status)+'</span></div>';
-  // Sold info
   var sd=sdiff(p);
-  if(sd){var cls=sd.d>0?'above':sd.d<0?'below':'at';var sign=sd.d>0?'+':'';
-    h+='<div style="margin:.3rem 0;font-size:.8rem"><span class="badge badge-'+cls+'">Sold '+sign+sd.pct.toFixed(1)+'%</span> <span style="font-weight:600">'+fp(Number(p.soldPrice))+' NOK</span></div>'}
-  // Finn link
+  if(sd){var cls=sd.d>0?'above':sd.d<0?'below':'at';var sign=sd.d>0?'+':'';h+='<div style="margin:.3rem 0;font-size:.8rem"><span class="badge badge-'+cls+'">Sold '+sign+sd.pct.toFixed(1)+'%</span> <span style="font-weight:600">'+fp(Number(p.soldPrice))+' NOK</span></div>'}
   if(p.finnLink)h+='<div class="rp-finn"><a href="'+esc(p.finnLink)+'" target="_blank" rel="noopener" class="btn-link">↗ Open on Finn.no</a></div>';
-  // Realtor notes
   h+='<div class="rp-sec">Realtor Notes</div>';
   h+='<div class="rp-notes'+(p.realtorNotes?'':' empty')+'">'+(p.realtorNotes?esc(p.realtorNotes):'No notes yet')+'</div>';
-  // Pros/Cons
-  if(p.pros||p.cons){
-    h+='<div class="rp-procon"><div><div class="rp-label pro">✓ Pros</div><div>'+(p.pros?esc(p.pros):'—')+'</div></div><div><div class="rp-label con">✕ Cons</div><div>'+(p.cons?esc(p.cons):'—')+'</div></div></div>';
-  }
-  // Mortgage hero
+  if(p.pros||p.cons)h+='<div class="rp-procon"><div><div class="rp-label pro">✓ Pros</div><div>'+(p.pros?esc(p.pros):'—')+'</div></div><div><div class="rp-label con">✕ Cons</div><div>'+(p.cons?esc(p.cons):'—')+'</div></div></div>';
   h+='<div class="rp-sec">Mortgage</div>';
   h+='<div class="rp-hero"><div class="rp-h-lbl">Monthly Mortgage</div><div class="rp-h-val">'+fmt(mc.monthly)+'</div><div class="rp-h-sub">NOK / month</div></div>';
-  // Controls
   h+='<div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:.3rem 0">';
   h+='<div class="rp-inp"><label>Down</label><div class="rp-presets">';
   [10,15,20].forEach(function(v){h+='<button class="rp-preset'+(mpDP===v?' sel':'')+'" onclick="mpDP='+v+';renderPanel()">'+v+'%</button>'});
@@ -552,62 +649,37 @@ function renderPanel(){
   h+='<div class="rp-inp"><label>Term</label><div class="rp-presets">';
   [25,30].forEach(function(v){h+='<button class="rp-preset'+(mpTerm===v?' sel':'')+'" onclick="mpTerm='+v+';renderPanel()">'+v+'yr</button>'});
   h+='</div></div>';
-  h+='<div class="rp-inp"><label>Rate</label><input value="'+mpRate+'" onchange="mpRate=parseFloat(this.value)||0;renderPanel()">%</div>';
-  h+='</div>';
-  // Breakdown
-  h+=mpr('Asking',fp(Number(p.askingPrice))+' NOK');
-  h+=mpr('Down ('+mpDP+'%)',fp(mc.down)+' NOK');
-  h+=mpr('Loan',fp(mc.loan)+' NOK');
-  h+='<hr class="rp-divider">';
-  h+=mpr('Monthly mortgage',fmt(mc.monthly)+' NOK');
-  // Actions
+  h+='<div class="rp-inp"><label>Rate</label><input value="'+mpRate+'" onchange="mpRate=parseFloat(this.value)||0;renderPanel()">%</div></div>';
+  h+=mpr('Asking',fp(Number(p.askingPrice))+' NOK')+mpr('Down ('+mpDP+'%)',fp(mc.down)+' NOK')+mpr('Loan',fp(mc.loan)+' NOK');
+  h+='<hr class="rp-divider">'+mpr('Monthly',fmt(mc.monthly)+' NOK');
   h+='<div class="rp-actions"><button class="btn btn-sm" onclick="openForm(\''+p.id+'\')">Edit</button><button class="btn btn-sm" onclick="dupProp(\''+p.id+'\')">Duplicate</button></div>';
   panel.innerHTML=h;
 }
-function mpr(l,v,cls){return'<div class="rp-mrow"><span class="ml">'+l+'</span><span class="mv'+(cls?' '+cls:'')+'">'+v+'</span></div>'}
+function mpr(l,v){return'<div class="rp-mrow"><span class="ml">'+l+'</span><span class="mv">'+v+'</span></div>'}
 
 /* ============================================================
    COMPARE
    ============================================================ */
-function openCompare(){
-  if(cmpSet.size<2){alert('Select at least 2.');return}
-  var ps=[];cmpSet.forEach(function(id){var p=props.find(function(x){return x.id===id});if(p)ps.push(p)});
-  var keys=['address','realtor','realtorAgency','askingPrice','soldPrice','_diff','_mort','status','realtorNotes','pros','cons'];
-  var labels={address:'Address',realtor:'Realtor',realtorAgency:'Agency',askingPrice:'Asking',soldPrice:'Sold',_diff:'vs Asking',_mort:'Monthly',status:'Status',realtorNotes:'Realtor Notes',pros:'Pros',cons:'Cons'};
-  var h='<table class="ctable"><thead><tr><th></th>'+ps.map(function(p){return'<td style="font-weight:600;font-size:.8rem">'+esc(p.address||'—')+'</td>'}).join('')+'</tr></thead><tbody>';
-  keys.forEach(function(k){h+='<tr><th>'+(labels[k]||k)+'</th>'+ps.map(function(p){if(k==='_diff')return'<td>'+(sdlbl(p)||'—')+'</td>';if(k==='_mort'){var mc=mortCalc(Number(p.askingPrice)||0,mpDP,mpRate,mpTerm);return'<td style="font-weight:600;color:var(--accent)">'+fmt(mc.monthly)+'</td>'}var v=p[k]||'—';if(k==='askingPrice'||k==='soldPrice')v=v!=='—'?fp(v):'—';return'<td>'+esc(String(v))+'</td>'}).join('')+'</tr>'});
-  h+='</tbody></table>';
-  document.getElementById('cmpBody').innerHTML=h;document.getElementById('cmpOv').classList.add('open');
-}
+function openCompare(){if(cmpSet.size<2){alert('Select at least 2.');return}var ps=[];cmpSet.forEach(function(id){var p=props.find(function(x){return x.id===id});if(p)ps.push(p)});var keys=['address','realtor','realtorAgency','askingPrice','soldPrice','_diff','_mort','status','realtorNotes','pros','cons'];var labels={address:'Address',realtor:'Realtor',realtorAgency:'Agency',askingPrice:'Asking',soldPrice:'Sold',_diff:'vs Asking',_mort:'Monthly',status:'Status',realtorNotes:'Notes',pros:'Pros',cons:'Cons'};var h='<table class="ctable"><thead><tr><th></th>'+ps.map(function(p){return'<td style="font-weight:600;font-size:.8rem">'+esc(p.address||'—')+'</td>'}).join('')+'</tr></thead><tbody>';keys.forEach(function(k){h+='<tr><th>'+(labels[k]||k)+'</th>'+ps.map(function(p){if(k==='_diff')return'<td>'+(sdlbl(p)||'—')+'</td>';if(k==='_mort'){var mc=mortCalc(Number(p.askingPrice)||0,mpDP,mpRate,mpTerm);return'<td style="font-weight:600;color:var(--accent)">'+fmt(mc.monthly)+'</td>'}var v=p[k]||'—';if(k==='askingPrice'||k==='soldPrice')v=v!=='—'?fp(v):'—';return'<td>'+esc(String(v))+'</td>'}).join('')+'</tr>'});h+='</tbody></table>';document.getElementById('cmpBody').innerHTML=h;document.getElementById('cmpOv').classList.add('open')}
 function closeCmpM(){document.getElementById('cmpOv').classList.remove('open')}
 
 /* ============================================================
    FINN PASTE PARSER
    ============================================================ */
-function parseFinn(t){var r={};if(!t)return r;t=t.replace(/\r\n/g,'\n');var m;m=t.match(/(?:prisantydning|totalpris|pris)\s*[:.]?\s*([\d\s.,]+)\s*(?:kr|NOK)/i);if(m)r.askingPrice=m[1].replace(/[\s.]/g,'').replace(',','');m=t.match(/(?:solgt\s*for|salgspris)\s*[:.]?\s*([\d\s.,]+)\s*(?:kr|NOK)/i);if(m)r.soldPrice=m[1].replace(/[\s.]/g,'').replace(',','');var lines=t.split('\n'),addrRx=/^[A-ZÆØÅ][\wæøåÆØÅ\s]+\d+[A-Za-z]?\s*$/;for(var k=0;k<Math.min(lines.length,20);k++){var ln=lines[k].trim();if(addrRx.test(ln)&&ln.length>4&&ln.length<80){r.address=ln;break}}m=t.match(/(?:megler|eiendomsmegler|ansvarlig\s*megler)\s*[:.]?\s*(.+)/i);if(m)r.realtor=m[1].trim().substring(0,80);m=t.match(/(?:meglerforetak|eiendomsmeglerforetak)\s*[:.]?\s*(.+)/i);if(m)r.realtorAgency=m[1].trim().substring(0,80);return r}
+function parseFinn(t){var r={};if(!t)return r;t=t.replace(/\r\n/g,'\n');var m;m=t.match(/(?:prisantydning|totalpris|pris)\s*[:.]?\s*([\d\s.,]+)\s*(?:kr|NOK)/i);if(m)r.askingPrice=m[1].replace(/[\s.]/g,'').replace(',','');m=t.match(/(?:solgt\s*for|salgspris)\s*[:.]?\s*([\d\s.,]+)\s*(?:kr|NOK)/i);if(m)r.soldPrice=m[1].replace(/[\s.]/g,'').replace(',','');var lines=t.split('\n'),addrRx=/^[A-ZÆØÅ][\wæøåÆØÅ\s]+\d+[A-Za-z]?\s*$/;for(var k=0;k<Math.min(lines.length,20);k++){var ln=lines[k].trim();if(addrRx.test(ln)&&ln.length>4&&ln.length<80){r.address=ln;break}}m=t.match(/(?:megler|ansvarlig\s*megler)\s*[:.]?\s*(.+)/i);if(m)r.realtor=m[1].trim().substring(0,80);m=t.match(/(?:meglerforetak)\s*[:.]?\s*(.+)/i);if(m)r.realtorAgency=m[1].trim().substring(0,80);return r}
 function doFinnParse(){var ta=document.getElementById('finnPaste'),st=document.getElementById('finnSt');if(!ta||!ta.value.trim()){st.textContent='Paste text first.';st.className='ist er';return}try{var parsed=parseFinn(ta.value),keys=Object.keys(parsed);if(!keys.length){st.textContent='No fields found.';st.className='ist er';return}var filled=0;keys.forEach(function(k){var el=document.getElementById('f_'+k);if(el&&!el.value){el.value=parsed[k];filled++}});st.textContent='Found '+keys.length+', filled '+filled+'.';st.className='ist ok'}catch(e){st.textContent='Error.';st.className='ist er'}}
 
 /* ============================================================
-   FORM (simplified)
+   FORM + SAVE (async for Supabase)
    ============================================================ */
 function buildForm(){
   var g=document.getElementById('formGrid'),h='';
-  // Finn import
   h+='<details class="impbox"><summary>📋 Paste from Finn.no</summary><div style="margin-top:.4rem"><div class="hint">Copy all text from a Finn listing, paste below, click Extract.</div><textarea id="finnPaste" placeholder="Paste text…"></textarea><div class="iacts"><button type="button" class="btn btn-sm btn-primary" onclick="doFinnParse()">Extract</button><span class="ist" id="finnSt"></span></div></div></details>';
   var lastSec='';
-  FORM_FIELDS.forEach(function(f){
-    if(f.sec==='notes'&&lastSec!=='notes'){lastSec='notes';h+='<div class="sf-sec">Notes & Assessment</div>'}
-    var stl=f.full?'grid-column:1/-1':'';
-    h+='<div style="'+stl+'"><label for="f_'+f.k+'">'+f.l+'</label>';
-    if(f.t==='textarea')h+='<textarea id="f_'+f.k+'" rows="3"></textarea>';
-    else if(f.t==='status')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="">—</option>'+STATUSES.map(function(s){return'<option value="'+s+'">'+s+'</option>'}).join('')+'</select>';
-    else h+='<input type="'+(f.t==='number'?'number':f.t)+'" id="f_'+f.k+'">';
-    h+='</div>';
-  });
-  // Images
+  FORM_FIELDS.forEach(function(f){if(f.sec==='notes'&&lastSec!=='notes'){lastSec='notes';h+='<div class="sf-sec">Notes & Assessment</div>'}var stl=f.full?'grid-column:1/-1':'';h+='<div style="'+stl+'"><label for="f_'+f.k+'">'+f.l+'</label>';if(f.t==='textarea')h+='<textarea id="f_'+f.k+'" rows="3"></textarea>';else if(f.t==='status')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="">—</option>'+STATUSES.map(function(s){return'<option value="'+s+'">'+s+'</option>'}).join('')+'</select>';else h+='<input type="'+(f.t==='number'?'number':f.t)+'" id="f_'+f.k+'">';h+='</div>'});
   h+='<div class="sf-sec">Images</div>';
   h+='<div class="img-up" id="imgDrop" onclick="document.getElementById(\'imgFile\').click()"><div class="dt">Drop images or <strong>click to browse</strong></div><input type="file" id="imgFile" accept="image/*" multiple style="display:none" onchange="handleImgs(this.files)"></div>';
-  h+='<div class="img-warn">⚠ Images stored locally (~5MB limit). Export JSON backups.</div>';
+  h+='<div class="img-warn">⚠ Images uploaded to shared storage. Both users see the same photos.</div>';
   h+='<div class="img-thumbs" id="imgThumbs"></div>';
   g.innerHTML=h;
   var drop=document.getElementById('imgDrop');
@@ -615,29 +687,57 @@ function buildForm(){
   drop.addEventListener('dragleave',function(){drop.classList.remove('dragover')});
   drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('dragover');handleImgs(e.dataTransfer.files)});
 }
-function handleImgs(files){for(var i=0;i<files.length;i++){(function(f){compressImg(f,600,.6,function(d){tempImgs.push({id:gid(),name:f.name,data:d,cover:tempImgs.length===0});renderImgTh()})})(files[i])}}
-function renderImgTh(){var c=document.getElementById('imgThumbs');if(!c)return;c.innerHTML=tempImgs.map(function(img,i){return'<div class="img-th'+(img.cover?' cover':'')+'" onclick="setImgCover('+i+')"><img src="'+img.data+'"><button class="img-del" onclick="event.stopPropagation();rmImg('+i+')">✕</button>'+(img.cover?'<div class="img-ctag">Cover</div>':'')+'</div>'}).join('')}
-function setImgCover(i){tempImgs.forEach(function(img,j){img.cover=j===i});renderImgTh()}
-function rmImg(i){tempImgs.splice(i,1);if(tempImgs.length&&!tempImgs.find(function(x){return x.cover}))tempImgs[0].cover=true;renderImgTh()}
-function openForm(id){
-  editId=id||null;document.getElementById('formTitle').textContent=id?'Edit Property':'Add Property';
-  buildForm();tempImgs=[];
-  if(id){var p=props.find(function(x){return x.id===id});if(p){FORM_FIELDS.forEach(function(f){var el=document.getElementById('f_'+f.k);if(el)el.value=p[f.k]||''});tempImgs=(p.images||[]).map(function(i){return{id:i.id,name:i.name,data:i.data,cover:i.cover}})}}
-  else{document.getElementById('f_dateAdded').value=new Date().toISOString().slice(0,10);document.getElementById('f_status').value='New'}
-  renderImgTh();document.getElementById('formOv').classList.add('open');
+async function handleImgs(files){
+  var propId=editId||'new_'+gid();
+  for(var i=0;i<files.length;i++){
+    var img=await uploadImage(propId,files[i]);
+    if(tempImgs.length===0)img.cover=true;
+    tempImgs.push(img);
+    renderImgTh();
+  }
 }
+function renderImgTh(){var c=document.getElementById('imgThumbs');if(!c)return;c.innerHTML=tempImgs.map(function(img,i){return'<div class="img-th'+(img.cover?' cover':'')+'" onclick="setImgCover('+i+')"><img src="'+esc(img.data)+'"><button class="img-del" onclick="event.stopPropagation();rmImg('+i+')">✕</button>'+(img.cover?'<div class="img-ctag">Cover</div>':'')+'</div>'}).join('')}
+function setImgCover(i){tempImgs.forEach(function(img,j){img.cover=j===i});renderImgTh()}
+function rmImg(i){var removed=tempImgs.splice(i,1)[0];if(removed)deleteStorageImage(removed);if(tempImgs.length&&!tempImgs.find(function(x){return x.cover}))tempImgs[0].cover=true;renderImgTh()}
+function openForm(id){editId=id||null;document.getElementById('formTitle').textContent=id?'Edit Property':'Add Property';buildForm();tempImgs=[];if(id){var p=props.find(function(x){return x.id===id});if(p){FORM_FIELDS.forEach(function(f){var el=document.getElementById('f_'+f.k);if(el)el.value=p[f.k]||''});tempImgs=(p.images||[]).map(function(i){return{id:i.id,name:i.name,data:i.data,path:i.path,cover:i.cover}})}}else{document.getElementById('f_dateAdded').value=new Date().toISOString().slice(0,10);document.getElementById('f_status').value='New'}renderImgTh();document.getElementById('formOv').classList.add('open')}
 function closeForm(){document.getElementById('formOv').classList.remove('open');editId=null;tempImgs=[]}
-function saveProp(){
+async function saveProp(){
+  var btn=document.getElementById('saveBtn');btn.textContent='Saving…';btn.disabled=true;
   var data={};
   FORM_FIELDS.forEach(function(f){var el=document.getElementById('f_'+f.k);data[f.k]=el?el.value.trim():''});
-  if(!data.address){alert('Address is required.');return}
+  if(!data.address){alert('Address is required.');btn.textContent='Save';btn.disabled=false;return}
   data.images=tempImgs.slice();
-  if(editId){var idx=props.findIndex(function(p){return p.id===editId});if(idx>=0){var old=props[idx];ALL_KEYS.forEach(function(k){if(data[k]===undefined)data[k]=old[k]||''});data.id=old.id;data.favorite=old.favorite;props[idx]=data}}
-  else{data.id=gid();data.favorite=false;ALL_KEYS.forEach(function(k){if(!data[k])data[k]=''});data.images=tempImgs.slice();props.unshift(data)}
-  save();closeForm();renderTable();
+  if(editId){
+    var idx=props.findIndex(function(p){return p.id===editId});
+    if(idx>=0){var old=props[idx];ALL_KEYS.forEach(function(k){if(data[k]===undefined)data[k]=old[k]||''});data.id=old.id;data.favorite=old.favorite;props[idx]=data}
+  }else{
+    data.id=gid();data.favorite=false;
+    ALL_KEYS.forEach(function(k){if(!data[k])data[k]=''});
+    data.images=tempImgs.slice();
+    props.unshift(data);
+  }
+  await saveToSupabase(data);
+  saveLocal();
+  btn.textContent='Save';btn.disabled=false;
+  closeForm();renderTable();
 }
-function delProp(id){if(!confirm('Delete?'))return;props=props.filter(function(p){return p.id!==id});cmpSet.delete(id);if(selId===id)selId=null;save();renderTable()}
-function dupProp(id){var p=props.find(function(x){return x.id===id});if(!p)return;var c=JSON.parse(JSON.stringify(p));c.id=gid();c.address+=' (copy)';c.dateAdded=new Date().toISOString().slice(0,10);c.favorite=false;c.soldPrice='';c.soldDate='';props.unshift(c);save();renderTable()}
+async function delProp(id){
+  if(!confirm('Delete?'))return;
+  props=props.filter(function(p){return p.id!==id});
+  cmpSet.delete(id);if(selId===id)selId=null;
+  await deleteFromSupabase(id);
+  saveLocal();renderTable();
+}
+async function dupProp(id){
+  var p=props.find(function(x){return x.id===id});if(!p)return;
+  var c=JSON.parse(JSON.stringify(p));
+  c.id=gid();c.address+=' (copy)';c.dateAdded=new Date().toISOString().slice(0,10);
+  c.favorite=false;c.soldPrice='';c.soldDate='';
+  // Clear image storage paths (they point to original — data URLs or public URLs still work)
+  props.unshift(c);
+  await saveToSupabase(c);
+  saveLocal();renderTable();
+}
 
 /* ============================================================
    LIGHTBOX
@@ -645,13 +745,24 @@ function dupProp(id){var p=props.find(function(x){return x.id===id});if(!p)retur
 function openLB(src){document.getElementById('lbImg').src=src;document.getElementById('lb').classList.add('open')}
 
 /* ============================================================
-   CSV / JSON
+   JSON EXPORT/IMPORT (backup tools)
    ============================================================ */
-function exportCSV(){if(!props.length)return;var keys=ALL_KEYS.filter(function(k){return k!=='images'});var header=keys.join(',');var rows=props.map(function(p){return keys.map(function(k){var v=p[k]||'';return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')});dl('boligsok_'+new Date().toISOString().slice(0,10)+'.csv',header+'\n'+rows.join('\n'),'text/csv')}
-function importCSV(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){var lines=e.target.result.split('\n').filter(function(l){return l.trim()});if(lines.length<2)return;var hd=csvL(lines[0]);var ct=0;for(var i=1;i<lines.length;i++){var vals=csvL(lines[i]);var obj={};hd.forEach(function(h,j){obj[h.trim()]=vals[j]||''});if(!obj.id)obj.id=gid();if(!obj.address)continue;if(!obj.images)obj.images=[];if(!props.find(function(p){return p.id===obj.id})){props.unshift(obj);ct++}}save();renderTable();alert('Imported '+ct)};r.readAsText(f);ev.target.value=''}
-function csvL(line){var r=[],c='',q=false;for(var i=0;i<line.length;i++){var ch=line[i];if(q){if(ch==='"'){if(line[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else{if(ch==='"')q=true;else if(ch===','){r.push(c);c=''}else c+=ch}}r.push(c);return r}
 function exportJSON(){if(!props.length)return;dl('boligsok_backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(props,null,2),'application/json')}
-function importJSON(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var data=JSON.parse(e.target.result);if(!Array.isArray(data))return;var ct=0;data.forEach(function(obj){if(!obj.id)obj.id=gid();if(!obj.address)return;if(!props.find(function(p){return p.id===obj.id})){props.unshift(obj);ct++}});save();renderTable();alert('Imported '+ct)}catch(err){alert('JSON error')}};r.readAsText(f);ev.target.value=''}
+async function importJSON(ev){
+  var f=ev.target.files[0];if(!f)return;
+  var r=new FileReader();r.onload=async function(e){
+    try{
+      var data=JSON.parse(e.target.result);if(!Array.isArray(data))return;
+      var ct=0;
+      for(var i=0;i<data.length;i++){
+        var obj=data[i];if(!obj.id)obj.id=gid();if(!obj.address)continue;
+        if(!props.find(function(p){return p.id===obj.id})){props.unshift(obj);await saveToSupabase(obj);ct++}
+      }
+      saveLocal();renderTable();toast('Imported '+ct+' properties');
+    }catch(err){alert('JSON error')}
+  };r.readAsText(f);ev.target.value='';
+}
+function exportCSV(){if(!props.length)return;var keys=ALL_KEYS.filter(function(k){return k!=='images'});var header=keys.join(',');var rows=props.map(function(p){return keys.map(function(k){var v=p[k]||'';return'"'+String(v).replace(/"/g,'""')+'"'}).join(',')});dl('boligsok_'+new Date().toISOString().slice(0,10)+'.csv',header+'\n'+rows.join('\n'),'text/csv')}
 function dl(name,content,type){var b=new Blob([content],{type:type});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click()}
 
 /* ============================================================
@@ -660,20 +771,7 @@ function dl(name,content,type){var b=new Blob([content],{type:type});var a=docum
 function numF(id){return Number(String(document.getElementById(id).value).replace(/[^\d.,-]/g,'').replace(',','.'))||0}
 function setFDP(pct){var p=numF('mcPrice');document.getElementById('mcDown').value=Math.round(p*pct);calcFull()}
 function setFT(y){document.getElementById('mcTerm').value=y;calcFull()}
-function calcFull(){
-  var price=numF('mcPrice'),down=numF('mcDown'),rate=numF('mcRate')/100,term=numF('mcTerm');
-  var felles=numF('mcFelles'),elec=numF('mcElec'),ins=numF('mcIns'),maint=numF('mcMaint');
-  var rent=numF('mcRent'),coRent=numF('mcCoRent'),div=numF('mcDiv');
-  var loan=Math.max(price-down,0),dpPct=price>0?((down/price)*100):0;
-  var mr=rate/12,n=term*12,monthly=0;
-  if(mr>0&&n>0)monthly=loan*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)monthly=loan/n;
-  var totalInt=0;if(mr>0&&n>0){var bal=loan;for(var i=0;i<n;i++){var mi=bal*mr;totalInt+=mi;bal-=(monthly-mi>0?monthly-mi:0)}}
-  var costs=monthly+felles+elec+ins+maint,offsets=rent+coRent+div,net=costs-offsets;
-  var res=document.getElementById('mcResults');
-  res.innerHTML=mcr('Loan',fp(loan))+mcr('Down',dpPct.toFixed(1)+'%')+mcr('Monthly Mortgage',fp(Math.round(monthly)))+mcr('Total Monthly',fp(Math.round(costs)))+mcr('Offsets',fp(Math.round(offsets)),'green')+mcr('Net Monthly',fp(Math.round(net)),net>0?'red':'green')+mcr('Total Interest ('+term+'yr)',fp(Math.round(totalInt)));
-  var comp=document.getElementById('mcComp'),steps=[-1e6,-5e5,0,5e5,1e6];
-  comp.innerHTML='<thead><tr><th style="text-align:left">Price</th><th>Down</th><th>Loan</th><th>Monthly</th><th>Net</th></tr></thead><tbody>'+steps.map(function(s){var cp=price+s;if(cp<=0)return'';var cd=Math.round(cp*(dpPct/100)),cl=cp-cd,cm=0;if(mr>0&&n>0)cm=cl*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)cm=cl/n;var cn=cm+felles+elec+ins+maint-offsets;return'<tr class="'+(s===0?'hl':'')+'"><td>'+fp(cp)+'</td><td>'+fp(cd)+'</td><td>'+fp(cl)+'</td><td>'+fp(Math.round(cm))+'</td><td>'+fp(Math.round(cn))+'</td></tr>'}).join('')+'</tbody>';
-}
+function calcFull(){var price=numF('mcPrice'),down=numF('mcDown'),rate=numF('mcRate')/100,term=numF('mcTerm');var felles=numF('mcFelles'),elec=numF('mcElec'),ins=numF('mcIns'),maint=numF('mcMaint');var rent=numF('mcRent'),coRent=numF('mcCoRent'),div=numF('mcDiv');var loan=Math.max(price-down,0),dpPct=price>0?((down/price)*100):0;var mr=rate/12,n=term*12,monthly=0;if(mr>0&&n>0)monthly=loan*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)monthly=loan/n;var totalInt=0;if(mr>0&&n>0){var bal=loan;for(var i=0;i<n;i++){var mi=bal*mr;totalInt+=mi;bal-=(monthly-mi>0?monthly-mi:0)}}var costs=monthly+felles+elec+ins+maint,offsets=rent+coRent+div,net=costs-offsets;document.getElementById('mcResults').innerHTML=mcr('Loan',fp(loan))+mcr('Down',dpPct.toFixed(1)+'%')+mcr('Monthly Mortgage',fp(Math.round(monthly)))+mcr('Total Monthly',fp(Math.round(costs)))+mcr('Offsets',fp(Math.round(offsets)),'green')+mcr('Net Monthly',fp(Math.round(net)),net>0?'red':'green')+mcr('Total Interest ('+term+'yr)',fp(Math.round(totalInt)));var comp=document.getElementById('mcComp'),steps=[-1e6,-5e5,0,5e5,1e6];comp.innerHTML='<thead><tr><th style="text-align:left">Price</th><th>Down</th><th>Loan</th><th>Monthly</th><th>Net</th></tr></thead><tbody>'+steps.map(function(s){var cp=price+s;if(cp<=0)return'';var cd=Math.round(cp*(dpPct/100)),cl=cp-cd,cm=0;if(mr>0&&n>0)cm=cl*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)cm=cl/n;var cn=cm+felles+elec+ins+maint-offsets;return'<tr class="'+(s===0?'hl':'')+'"><td>'+fp(cp)+'</td><td>'+fp(cd)+'</td><td>'+fp(cl)+'</td><td>'+fp(Math.round(cm))+'</td><td>'+fp(Math.round(cn))+'</td></tr>'}).join('')+'</tbody>'}
 function mcr(l,v,cls){return'<div class="mc-res"><span class="mc-rl">'+l+'</span><span class="mc-rv'+(cls?' '+cls:'')+'">'+v+'</span></div>'}
 
 /* ============================================================
@@ -684,8 +782,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeForm()
 /* ============================================================
    INIT
    ============================================================ */
-load();
-renderTable();
+initSupabase();
+loadFromSupabase();
 document.getElementById('mcPrice').value='7500000';
 document.getElementById('mcDown').value='750000';
 document.getElementById('mcRate').value='7';
