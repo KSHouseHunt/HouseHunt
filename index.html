@@ -54,7 +54,9 @@
      Both you and your husband will share the same data.
   ============================================================
 -->
-<!-- Supabase JS client (only external dependency, required for backend) -->
+<!-- Config: edit config.js to set your Supabase URL and anon key -->
+<script src="config.js"></script>
+<!-- Supabase JS client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -145,6 +147,17 @@ tr.row-sel td{background:var(--accent-light) !important}
 .badge{display:inline-block;padding:.1rem .45rem;border-radius:99px;font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
 .badge-new{background:var(--blue-lt);color:var(--blue)}.badge-interested{background:var(--green-lt);color:var(--green)}.badge-viewed{background:var(--purple-lt);color:var(--purple)}.badge-bid-planned{background:var(--orange-lt);color:var(--orange)}.badge-bid-submitted{background:#fde8d0;color:#b06015}.badge-rejected{background:var(--red-lt);color:var(--red)}.badge-sold{background:var(--grey-lt);color:var(--grey)}.badge-not-relevant{background:var(--grey-lt);color:var(--text3)}.badge-above{background:var(--green-lt);color:var(--green)}.badge-at{background:var(--grey-lt);color:var(--grey)}.badge-below{background:var(--orange-lt);color:var(--orange)}
 .sdif{font-size:.73rem;font-weight:600;white-space:nowrap}.sdif.above{color:var(--green)}.sdif.below{color:var(--red)}.sdif.at{color:var(--grey)}
+/* Report risk badges */
+.risk{display:inline-block;padding:.1rem .42rem;border-radius:99px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.risk-green{background:#e2f3e8;color:#2d7a42}.risk-yellow{background:#fef6d8;color:#a07b15}.risk-yellow-red{background:#fde8c8;color:#b05e12}.risk-red{background:var(--red-lt);color:var(--red)}
+/* BISS travel line in table */
+.c-biss{font-size:.66rem;color:var(--blue);display:block;margin-top:.05rem}
+.c-report{font-size:.66rem;color:var(--text3);display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Report section in right panel */
+.rp-report{background:var(--warm);border-radius:var(--r);padding:.7rem;margin-bottom:.5rem}
+.rp-report-row{display:flex;justify-content:space-between;padding:.15rem 0;font-size:.78rem}
+.rp-report-row .rrl{color:var(--text3);font-size:.72rem}.rp-report-row .rrv{color:var(--text);font-weight:500}
+.rp-report-text{font-size:.78rem;color:var(--text);line-height:1.45;white-space:pre-wrap;margin-top:.3rem}
 .star-btn{background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--border);padding:0;line-height:1}.star-btn.active{color:#d9a832}.star-btn:hover{color:#d9a832}
 .cbx{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
 /* Right panel */
@@ -238,13 +251,93 @@ tr.row-sel td{background:var(--accent-light) !important}
 .mc-ct td{padding:.35rem .45rem;border-bottom:1px solid var(--border-lt);text-align:right;font-variant-numeric:tabular-nums}
 .mc-ct td:first-child{text-align:left;font-weight:500}
 .mc-ct tr.hl td{background:var(--accent-light);font-weight:600}
+/* School Run */
+.sr-table{width:100%;border-collapse:collapse;font-size:.76rem;margin-top:.4rem}
+.sr-table th{background:var(--warm);padding:.35rem .45rem;font-size:.62rem;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);text-align:left;letter-spacing:.04em;cursor:pointer;user-select:none;white-space:nowrap}
+.sr-table th:hover{color:var(--text2)}
+.sr-table th .sa{margin-left:.1rem;font-size:.55rem;opacity:.35}
+.sr-table th.sorted .sa{opacity:1;color:var(--accent)}
+.sr-table td{padding:.35rem .45rem;border-bottom:1px solid var(--border-lt);vertical-align:middle}
+.sr-table tr:last-child td{border-bottom:none}
+.sr-table tr:hover td{background:var(--warm)}
+.sr-row-acts{display:flex;gap:.1rem}
+.sr-badge-to{display:inline-block;padding:.1rem .4rem;border-radius:99px;font-size:.6rem;font-weight:600;background:var(--blue-lt);color:var(--blue)}
+.sr-badge-from{display:inline-block;padding:.1rem .4rem;border-radius:99px;font-size:.6rem;font-weight:600;background:var(--purple-lt);color:var(--purple)}
+.sr-maps{font-size:.7rem;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:.15rem}
+.sr-maps:hover{text-decoration:underline}
+.sr-empty{color:var(--text3);font-size:.78rem;text-align:center;padding:.8rem;font-style:italic}
+/* School Run rating badges */
+.sr-rate{display:inline-block;padding:.1rem .4rem;border-radius:99px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.sr-rate-excellent{background:#e2f3e8;color:#2d7a42}
+.sr-rate-good{background:var(--blue-lt);color:var(--blue)}
+.sr-rate-acceptable{background:#fef6d8;color:#a07b15}
+.sr-rate-poor{background:var(--red-lt);color:var(--red)}
+.sr-rate-nodata{background:var(--grey-lt);color:var(--text3)}
+/* School run summary in panel */
+.sr-summary{background:var(--warm);border-radius:var(--r);padding:.6rem .7rem;margin-bottom:.5rem}
+.sr-summary-row{display:flex;justify-content:space-between;padding:.12rem 0;font-size:.76rem}
+.sr-summary-row .ssl{color:var(--text3);font-size:.68rem}.sr-summary-row .ssv{font-weight:600}
+/* Priority badges in compare grid */
+.sr-pri{display:inline-block;padding:.08rem .35rem;border-radius:99px;font-size:.58rem;font-weight:600;text-transform:uppercase}
+.sr-pri-high{background:#fde8d0;color:#b06015}
+.sr-pri-medium{background:var(--blue-lt);color:var(--blue)}
+.sr-pri-low{background:var(--grey-lt);color:var(--text3)}
+/* School Run panel compact rows */
+.sr-panel-row{display:flex;align-items:center;gap:.4rem;padding:.3rem 0;border-bottom:1px solid var(--border-lt);font-size:.76rem}
+.sr-panel-row:last-child{border-bottom:none}
+.sr-panel-row .sr-dir{flex-shrink:0}.sr-panel-row .sr-info{flex:1;min-width:0}
+.sr-panel-row .sr-day{color:var(--text2);font-size:.68rem}.sr-panel-row .sr-time{font-weight:600;margin:0 .2rem}
+.sr-panel-row .sr-dur{color:var(--accent);font-weight:600}.sr-panel-row .sr-note{color:var(--text3);font-size:.68rem;font-style:italic}
+/* Duration color badges */
+.dur-badge{display:inline-block;padding:.1rem .4rem;border-radius:99px;font-size:.65rem;font-weight:700;letter-spacing:.01em}
+.dur-green{background:#e2f3e8;color:#2a6e3c}.dur-yellow{background:#fef6d8;color:#9a7510}.dur-orange{background:#fde8c8;color:#a85a10}.dur-red{background:#fce8e6;color:#a03a30}
+/* Commute dot in main table */
+.sr-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.3rem;vertical-align:middle;flex-shrink:0}
+.sr-dot-green{background:#3a9e55}.sr-dot-yellow{background:#c9a825}.sr-dot-orange{background:#d48520}.sr-dot-red{background:#c0453a}
+/* Commute badge (best school run) */
+.sr-commute{display:inline-flex;align-items:center;gap:.2rem;padding:.12rem .45rem;border-radius:99px;font-size:.62rem;font-weight:700;letter-spacing:.01em;margin-top:.15rem;white-space:nowrap}
+.sr-commute-green{background:#e2f3e8;color:#2a6e3c}
+.sr-commute-yellow{background:#fef6d8;color:#9a7510}
+.sr-commute-orange{background:#fde8c8;color:#a85a10}
+.sr-commute-red{background:#fce8e6;color:#a03a30}
+.sr-commute-grey,.sr-commute-none{background:var(--grey-lt);color:var(--text3)}
+.sr-commute-lg{font-size:.72rem;padding:.18rem .55rem;margin-top:.2rem}
+/* School Run add/edit form overlay */
+.sr-form{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .7rem;margin-top:.5rem}
+.sr-form .full{grid-column:1/-1}
+.sr-form label{display:block;font-size:.65rem;font-weight:600;color:var(--text3);margin-bottom:.1rem;text-transform:uppercase;letter-spacing:.04em}
+.sr-form input,.sr-form select{width:100%;padding:.35rem .5rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.78rem}
+.sr-form input:focus,.sr-form select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-light)}
+/* School Run compare page */
+.sr-compare-wrap{max-width:1200px;margin:0 auto;padding:1.3rem}
+.sr-compare-filters{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.8rem;align-items:center}
+.sr-compare-card{background:var(--card);border:1px solid var(--border-lt);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh)}
 .empty-state{text-align:center;padding:2.5rem 1.5rem;color:var(--text3)}
+/* List type badges */
+.lt-active{display:inline-block;padding:.08rem .38rem;border-radius:99px;font-size:.58rem;font-weight:600;text-transform:uppercase;background:var(--accent-light);color:var(--accent)}
+.lt-ref{display:inline-block;padding:.08rem .38rem;border-radius:99px;font-size:.58rem;font-weight:600;text-transform:uppercase;background:var(--grey-lt);color:var(--grey)}
+/* Group section headers in table */
+.group-header td{background:var(--warm);padding:.4rem .7rem;font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+.group-header td span{font-weight:400;color:var(--text3);margin-left:.3rem}
+/* Move arrows */
+.move-btn{width:20px;height:20px;padding:0;border:none;background:none;cursor:pointer;color:var(--text3);font-size:.7rem;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;transition:all .1s}
+.move-btn:hover{background:var(--accent-light);color:var(--accent)}
+/* Price ladder */
+.pl-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:.3rem}
+.pl-table th{background:var(--warm);padding:.4rem .55rem;font-size:.66rem;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);text-align:right;font-weight:600}
+.pl-table th:first-child{text-align:left}
+.pl-table td{padding:.38rem .55rem;border-bottom:1px solid var(--border-lt);text-align:right;font-variant-numeric:tabular-nums;font-size:.76rem}
+.pl-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
+.pl-table tr:hover td{background:var(--warm)}
 .empty-state .icon{font-size:2.2rem;margin-bottom:.6rem;opacity:.3}
 .empty-state p{margin-bottom:.6rem;font-size:.85rem}
 .no-data{color:var(--text3);font-size:.78rem;text-align:center;padding:1.2rem}
 /* Toast */
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:.5rem 1.2rem;border-radius:var(--r);font-size:.8rem;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
+/* Config warning banner */
+.config-warn{background:#fce8e6;border-bottom:2px solid var(--red);padding:.55rem 1.5rem;font-size:.78rem;color:var(--red);font-weight:600;display:flex;align-items:center;gap:.4rem}
+.config-warn a{color:var(--red);text-decoration:underline}
 @media(min-width:1400px){:root{--panel:460px}}
 @media(max-width:1050px){:root{--panel:360px}}
 @media(max-width:900px){.main-layout{grid-template-columns:1fr}.main-right{position:static;height:auto;border-left:none;border-top:1px solid var(--border)}.nav-right .hsm{display:none}}
@@ -252,11 +345,13 @@ tr.row-sel td{background:var(--accent-light) !important}
 </style>
 </head>
 <body>
+<div id="configWarn"></div>
 
 <div class="topnav">
   <div class="logo">Boligsøk</div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('tracker')">Properties</button>
+    <button class="nav-tab" onclick="showPage('schoolrun')">School Run</button>
     <button class="nav-tab" onclick="showPage('mortgage')">Full Calculator</button>
   </div>
   <div class="nav-right">
@@ -278,9 +373,11 @@ tr.row-sel td{background:var(--accent-light) !important}
     <div class="compare-bar" id="cmpBar"><span><strong id="cmpCount">0</strong> selected</span><div><button class="btn btn-sm" onclick="openCompare()">Compare</button> <button class="btn btn-sm" onclick="clearCmp()">Clear</button></div></div>
     <div class="toolbar">
       <input class="search-box" type="text" id="searchBox" placeholder="Search address, realtor, notes…" oninput="renderTable()">
+      <select class="fsel" id="fListType" onchange="renderTable()"><option value="">All Houses</option><option value="Active">Active</option><option value="Reference">Reference</option></select>
       <select class="fsel" id="fStatus" onchange="renderTable()"><option value="">All Statuses</option></select>
       <select class="fsel" id="fRealtor" onchange="renderTable()"><option value="">All Realtors</option></select>
       <select class="fsel" id="fSold" onchange="renderTable()"><option value="">Sold/Unsold</option><option value="sold">Sold</option><option value="unsold">Unsold</option><option value="above">Above</option><option value="below">Below</option></select>
+      <select class="fsel" id="fSort" onchange="changeSort(this.value)"><option value="_manual">Manual order</option><option value="dateAdded">Date added</option><option value="askingPrice">Asking price</option><option value="address">Address</option></select>
       <button class="btn btn-sm" onclick="clearFilters()">Clear</button>
     </div>
     <div class="table-wrap"><div class="table-scroll">
@@ -288,6 +385,24 @@ tr.row-sel td{background:var(--accent-light) !important}
     </div><div class="no-data" id="noData" style="display:none">No properties match.</div></div>
   </div>
   <div class="main-right"><div class="main-right-inner" id="rpanel"></div></div>
+</div>
+</div>
+
+<div class="page" id="page-schoolrun">
+<div class="sr-compare-wrap">
+  <h2 style="font-size:1rem;font-weight:700;color:var(--accent);margin-bottom:.8rem">🚗 School Run Compare — BiSS Gausel</h2>
+  <div class="sr-compare-filters">
+    <select class="fsel" id="srfDir" onchange="renderSRCompare()"><option value="">All Directions</option><option value="To BiSS">To BiSS</option><option value="From BiSS">From BiSS</option></select>
+    <select class="fsel" id="srfDay" onchange="renderSRCompare()"><option value="">All Days</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Weekend</option></select>
+    <select class="fsel" id="srfProp" onchange="renderSRCompare()"><option value="">All Properties</option></select>
+    <select class="fsel" id="srfTime" onchange="renderSRCompare()"><option value="">All Times</option><option value="morning">Morning only</option><option value="afternoon">Afternoon only</option></select>
+    <select class="fsel" id="srfRating" onchange="renderSRCompare()"><option value="">All Ratings</option><option value="poor">Poor / Long only</option><option value="acceptable">Acceptable+</option><option value="good">Good+</option><option value="excellent">Excellent only</option></select>
+    <button class="btn btn-sm" onclick="clearSRFilters()">Clear</button>
+  </div>
+  <div class="sr-compare-card">
+    <div class="table-scroll"><table class="sr-table" id="srCompareTable"></table></div>
+    <div class="sr-empty" id="srNoData" style="display:none">No school-run entries yet. Add them from the property detail panel.</div>
+  </div>
 </div>
 </div>
 
@@ -312,6 +427,7 @@ tr.row-sel td{background:var(--accent-light) !important}
     </div>
     <div class="mc-card" style="grid-column:1/-1"><h3>Results</h3><div id="mcResults"></div></div>
     <div class="mc-card" style="grid-column:1/-1"><h3>Comparison</h3><table class="mc-ct" id="mcComp"></table></div>
+    <div class="mc-card" style="grid-column:1/-1"><h3>Price Ladder — Monthly Mortgage (10% down, 25yr)</h3><div style="overflow-x:auto"><table class="pl-table" id="priceLadder"></table></div></div>
   </div>
 </div>
 </div>
@@ -327,16 +443,35 @@ tr.row-sel td{background:var(--accent-light) !important}
     <div class="mbody" id="cmpBody" style="overflow-x:auto"></div>
   </div>
 </div>
+<div class="overlay" id="srFormOv" onclick="if(event.target===this)closeSRForm()">
+  <div class="modal" style="max-width:480px">
+    <div class="mh"><h2 id="srFormTitle">Add School Run Time</h2><button class="btn-icon" onclick="closeSRForm()">✕</button></div>
+    <div class="mbody">
+      <div class="sr-form" id="srFormGrid"></div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeSRForm()">Cancel</button><button class="btn btn-primary" onclick="saveSREntry()">Save</button></div>
+  </div>
+</div>
 <div class="lightbox" id="lb" onclick="this.classList.remove('open')"><img id="lbImg" src=""></div>
 <div class="toast" id="toast"></div>
 
 <script>
 /* ============================================================
-   SUPABASE CONFIG — PASTE YOUR CREDENTIALS HERE
+   SUPABASE CONFIG — loaded from config.js
    ============================================================ */
-var SUPABASE_URL  = 'https://rheqgfdlgpulojswldcc.supabase.co';
-var SUPABASE_ANON_KEY = 'sb_publishable_NxiiQblnOWcAddzI6qyBZw_beJ0pBI9';
+var _cfg = window.APP_CONFIG || {};
+var SUPABASE_URL  = _cfg.SUPABASE_URL || '';
+var SUPABASE_ANON_KEY = _cfg.SUPABASE_ANON_KEY || '';
 var STORAGE_BUCKET = 'property-images';
+
+// Show warning if config is missing
+(function(){
+  if (!window.APP_CONFIG) {
+    document.getElementById('configWarn').innerHTML = '<div class="config-warn">⚠ config.js not found. Create a config.js file next to index.html — see setup instructions in the HTML comment.</div>';
+  } else if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    document.getElementById('configWarn').innerHTML = '<div class="config-warn">⚠ Supabase not configured. Open <a href="config.js">config.js</a> and paste your SUPABASE_URL and SUPABASE_ANON_KEY. Data is saved locally only until configured.</div>';
+  }
+})();
 
 /* ============================================================
    SUPABASE CLIENT INIT
@@ -379,25 +514,32 @@ function toast(msg) {
    DATA LOAD — Supabase primary, localStorage fallback
    ============================================================ */
 var STATUSES = ['New','Interested','Viewed','Bid planned','Bid submitted','Rejected','Sold to others','Not relevant'];
-var ALL_KEYS = ['id','favorite','finnLink','address','municipality','realtor','realtorAgency','propertyType','status','priority','askingPrice','estimatedFinal','felleskostnader','estimatedReno','soldPrice','soldDate','areaSqm','pricePerSqm','plotSize','bedrooms','bathrooms','yearBuilt','dateAdded','viewingDate','conditionNotes','viewingNotes','realtorNotes','pros','cons','tg2','tg3','images'];
+var ALL_KEYS = ['id','favorite','finnLink','address','municipality','realtor','realtorAgency','propertyType','status','priority','askingPrice','estimatedFinal','felleskostnader','estimatedReno','soldPrice','soldDate','areaSqm','pricePerSqm','plotSize','bedrooms','bathrooms','yearBuilt','dateAdded','viewingDate','conditionNotes','viewingNotes','realtorNotes','pros','cons','tg2','tg3','images','travelTimeToBISS','travelModeToBISS','reportRiskLevel','reportSummary','reportEstimatedCosts','reportKeyFindings','schoolRuns','listType','sortOrder'];
 var FORM_FIELDS = [
   {k:'finnLink',l:'Finn Link',t:'url',full:1},
-  {k:'address',l:'Address',t:'text'},{k:'realtor',l:'Realtor',t:'text'},
+  {k:'address',l:'Address',t:'text'},{k:'listType',l:'List Type',t:'listtype'},
+  {k:'realtor',l:'Realtor',t:'text'},
   {k:'realtorAgency',l:'Realtor Agency',t:'text'},
   {k:'askingPrice',l:'Asking Price (NOK)',t:'number'},{k:'soldPrice',l:'Sold Price (NOK)',t:'number'},
   {k:'status',l:'Status',t:'status'},{k:'dateAdded',l:'Date Added',t:'date'},
   {k:'realtorNotes',l:'Notes on Realtor Conversation',t:'textarea',full:1,sec:'notes'},
-  {k:'pros',l:'Our Pros',t:'textarea',full:1},{k:'cons',l:'Our Cons',t:'textarea',full:1}
+  {k:'pros',l:'Our Pros',t:'textarea',full:1},{k:'cons',l:'Our Cons',t:'textarea',full:1},
+  {k:'travelTimeToBISS',l:'Travel Time to BISS (min)',t:'number',sec:'biss'},
+  {k:'travelModeToBISS',l:'Travel Mode to BISS',t:'travelmode'},
+  {k:'reportRiskLevel',l:'Report Risk Level',t:'risklevel',sec:'report'},
+  {k:'reportSummary',l:'Report Summary',t:'textarea',full:1},
+  {k:'reportEstimatedCosts',l:'Report Estimated Costs',t:'text',full:1},
+  {k:'reportKeyFindings',l:'Report Key Findings',t:'textarea',full:1}
 ];
 var COLS = [
   {k:'_fav',l:'★',w:'26px'},{k:'_cb',l:'',w:'26px'},{k:'_img',l:'',w:'72px'},
   {k:'address',l:'Property',sort:1},{k:'askingPrice',l:'Asking',sort:1},
   {k:'soldPrice',l:'Sold',sort:1},{k:'_diff',l:'Diff',sort:1},
   {k:'_mort',l:'Monthly',sort:1},{k:'status',l:'Status',sort:1},
-  {k:'_act',l:'',w:'56px'}
+  {k:'_act',l:'',w:'56px'},{k:'_order',l:'',w:'36px'}
 ];
 
-var props = [], editId = null, sortCol = 'dateAdded', sortDir = 'desc';
+var props = [], editId = null, sortCol = '_manual', sortDir = 'asc';
 var cmpSet = new Set(), selId = null, tempImgs = [];
 var mpDP = 10, mpRate = 7, mpTerm = 30;
 
@@ -508,9 +650,9 @@ async function deleteStorageImage(img) {
    ============================================================ */
 function seedDemo() {
   props = [
-    {id:'d1',favorite:false,finnLink:'https://finn.no/realestate/homes/ad.html?finnkode=123456',address:'Solveien 14, Sandnes',realtor:'Kristian Berg',realtorAgency:'DNB Eiendom',status:'Interested',askingPrice:'6500000',soldPrice:'',soldDate:'',dateAdded:'2026-03-15',realtorNotes:'Seller wants quick sale, already bought new house. Flexible on price. Viewing Monday 18:00.',pros:'Big plot (650m²), good layout, 4 bedrooms, quiet street, close to barnehage',cons:'Bathroom needs update within 5 years, TG2 on ventilation',images:[]},
-    {id:'d2',favorite:true,finnLink:'',address:'Granveien 8B, Sandnes',realtor:'Marte Johansen',realtorAgency:'Eie Eiendom',status:'Sold to others',askingPrice:'5200000',soldPrice:'5450000',soldDate:'2026-03-10',dateAdded:'2026-02-20',realtorNotes:'Sold above asking. 4 bidders, went fast. Agent said similar homes expected 5.3–5.5M.',pros:'Modern kitchen, low maintenance, move-in ready',cons:'Small plot, shared wall noise, tight parking',images:[]},
-    {id:'d3',favorite:false,finnLink:'',address:'Fjordgata 22, Stavanger',realtor:'Anders Nilsen',realtorAgency:'PrivatMegleren',status:'Sold to others',askingPrice:'8900000',soldPrice:'8650000',soldDate:'2026-03-05',dateAdded:'2026-02-10',realtorNotes:'Sold below asking. TG3 on electrical scared buyers. Renovation 400-600k. Agent confirmed hard to sell.',pros:'Fjord view, large rooms, 5 bedrooms, great location',cons:'Major electrical redo (TG3), expensive renovation, old drainage',images:[]}
+    {id:'d1',favorite:false,listType:'Active',sortOrder:1,finnLink:'https://finn.no/realestate/homes/ad.html?finnkode=123456',address:'Solveien 14, Sandnes',realtor:'Kristian Berg',realtorAgency:'DNB Eiendom',status:'Interested',askingPrice:'6500000',soldPrice:'',soldDate:'',dateAdded:'2026-03-15',realtorNotes:'Seller wants quick sale, already bought new house. Flexible on price. Viewing Monday 18:00.',pros:'Big plot (650m²), good layout, 4 bedrooms, quiet street, close to barnehage',cons:'Bathroom needs update within 5 years, TG2 on ventilation',images:[],travelTimeToBISS:'12',travelModeToBISS:'Car',reportRiskLevel:'Yellow',reportSummary:'Overall decent condition. Bathroom ventilation flagged TG2. Roof OK. Drainage needs monitoring.',reportEstimatedCosts:'150 000 – 250 000 NOK',reportKeyFindings:'TG2 bathroom ventilation, minor moisture in crawl space, electrical OK',schoolRuns:[{direction:'To BiSS',day:'Monday',time:'07:30',duration:'7–9 min',notes:'Morning drop-off, light traffic',mapsUrl:''},{direction:'From BiSS',day:'Monday',time:'16:00',duration:'8–10 min',notes:'Afternoon pick-up',mapsUrl:''},{direction:'To BiSS',day:'Friday',time:'08:30',duration:'12 min',notes:'Later start, heavier traffic',mapsUrl:''}]},
+    {id:'d2',favorite:true,listType:'Reference',sortOrder:1,finnLink:'',address:'Granveien 8B, Sandnes',realtor:'Marte Johansen',realtorAgency:'Eie Eiendom',status:'Sold to others',askingPrice:'5200000',soldPrice:'5450000',soldDate:'2026-03-10',dateAdded:'2026-02-20',realtorNotes:'Sold above asking. 4 bidders, went fast. Agent said similar homes expected 5.3–5.5M.',pros:'Modern kitchen, low maintenance, move-in ready',cons:'Small plot, shared wall noise, tight parking',images:[],travelTimeToBISS:'18',travelModeToBISS:'Mixed',reportRiskLevel:'Green',reportSummary:'Very good condition overall. No significant findings. Move-in ready.',reportEstimatedCosts:'0 – 30 000 NOK',reportKeyFindings:'Minor cosmetic wear, all systems TG1',schoolRuns:[{direction:'To BiSS',day:'Monday',time:'07:30',duration:'15–18 min',notes:'Via motorway, moderate traffic',mapsUrl:''},{direction:'From BiSS',day:'Monday',time:'16:30',duration:'18–22 min',notes:'Rush hour delay',mapsUrl:''}]},
+    {id:'d3',favorite:false,listType:'Reference',sortOrder:2,finnLink:'',address:'Fjordgata 22, Stavanger',realtor:'Anders Nilsen',realtorAgency:'PrivatMegleren',status:'Sold to others',askingPrice:'8900000',soldPrice:'8650000',soldDate:'2026-03-05',dateAdded:'2026-02-10',realtorNotes:'Sold below asking. TG3 on electrical scared buyers. Renovation 400-600k. Agent confirmed hard to sell.',pros:'Fjord view, large rooms, 5 bedrooms, great location',cons:'Major electrical redo (TG3), expensive renovation, old drainage',images:[],travelTimeToBISS:'25',travelModeToBISS:'Public transport',reportRiskLevel:'Red',reportSummary:'Serious issues. TG3 on full electrical system. TG2 on roof and drainage. High renovation cost.',reportEstimatedCosts:'400 000 – 650 000 NOK',reportKeyFindings:'TG3 electrical (full replacement needed), TG2 roof membrane, TG2 drainage, moisture in basement',schoolRuns:[{direction:'To BiSS',day:'Monday',time:'07:30',duration:'22–28 min',notes:'City traffic, school zone delays',mapsUrl:''},{direction:'From BiSS',day:'Wednesday',time:'16:00',duration:'20–25 min',notes:'Via E39',mapsUrl:''}]}
   ];
   saveLocal();
   // If Supabase connected, push demo data
@@ -535,7 +677,7 @@ function compressImg(file,maxW,q,cb){var r=new FileReader();r.onload=function(e)
 /* ============================================================
    NAV
    ============================================================ */
-function showPage(n){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active')});document.getElementById('page-'+n).classList.add('active');document.querySelectorAll('.nav-tab')[n==='tracker'?0:1].classList.add('active');if(n==='mortgage')calcFull()}
+function showPage(n){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active')});document.getElementById('page-'+n).classList.add('active');var tabs=document.querySelectorAll('.nav-tab');var idx=n==='tracker'?0:n==='schoolrun'?1:2;tabs[idx].classList.add('active');if(n==='mortgage')calcFull();if(n==='schoolrun')renderSRCompare()}
 
 /* ============================================================
    DASHBOARD
@@ -558,7 +700,7 @@ function dc(l,v,sm,st){return'<div class="dash-card"><div class="dl">'+l+'</div>
    ============================================================ */
 function popFilters(){var rs={},ra=[];props.forEach(function(p){var key=p.realtorAgency||p.realtor;if(key&&!rs[key]){ra.push(key);rs[key]=1}});ra.sort();fsel('fStatus',STATUSES);fsel('fRealtor',ra)}
 function fsel(id,opts){var el=document.getElementById(id),cur=el.value,first=el.options[0].textContent;el.innerHTML='<option value="">'+first+'</option>'+opts.map(function(o){return'<option value="'+o+'">'+o+'</option>'}).join('');el.value=cur}
-function clearFilters(){document.getElementById('searchBox').value='';['fStatus','fRealtor','fSold'].forEach(function(id){document.getElementById(id).value=''});renderTable()}
+function clearFilters(){document.getElementById('searchBox').value='';['fStatus','fRealtor','fSold','fListType'].forEach(function(id){document.getElementById(id).value=''});document.getElementById('fSort').value='_manual';sortCol='_manual';sortDir='asc';renderTable()}
 function getFiltered(){
   var list=props.slice(),q=document.getElementById('searchBox').value.toLowerCase(),v;
   if(q)list=list.filter(function(p){return(p.address||'').toLowerCase().indexOf(q)>=0||(p.realtor||'').toLowerCase().indexOf(q)>=0||(p.realtorAgency||'').toLowerCase().indexOf(q)>=0||(p.realtorNotes||'').toLowerCase().indexOf(q)>=0||(p.pros||'').toLowerCase().indexOf(q)>=0||(p.cons||'').toLowerCase().indexOf(q)>=0});
@@ -569,8 +711,14 @@ function getFiltered(){
   else if(v==='unsold')list=list.filter(function(p){return!Number(p.soldPrice)});
   else if(v==='above')list=list.filter(function(p){return scat(p)==='above'});
   else if(v==='below')list=list.filter(function(p){return scat(p)==='below'});
-  var nc=['askingPrice','soldPrice'];
-  list.sort(function(a,b){var va,vb;if(sortCol==='_diff'){var da=sdiff(a),db=sdiff(b);va=da?da.pct:-99999;vb=db?db.pct:-99999}else if(sortCol==='_mort'){va=Number(a.askingPrice)||0;vb=Number(b.askingPrice)||0}else if(nc.indexOf(sortCol)>=0){va=Number(a[sortCol])||0;vb=Number(b[sortCol])||0}else{va=(a[sortCol]||'').toString().toLowerCase();vb=(b[sortCol]||'').toString().toLowerCase()}if(va<vb)return sortDir==='asc'?-1:1;if(va>vb)return sortDir==='asc'?1:-1;return 0});
+  v=document.getElementById('fListType').value;if(v)list=list.filter(function(p){return(p.listType||'Active')===v});
+  // Sort
+  if(sortCol==='_manual'){
+    list.sort(function(a,b){return(Number(a.sortOrder)||9999)-(Number(b.sortOrder)||9999)});
+  }else{
+    var nc=['askingPrice','soldPrice'];
+    list.sort(function(a,b){var va,vb;if(sortCol==='_diff'){var da=sdiff(a),db=sdiff(b);va=da?da.pct:-99999;vb=db?db.pct:-99999}else if(sortCol==='_mort'){va=Number(a.askingPrice)||0;vb=Number(b.askingPrice)||0}else if(nc.indexOf(sortCol)>=0){va=Number(a[sortCol])||0;vb=Number(b[sortCol])||0}else{va=(a[sortCol]||'').toString().toLowerCase();vb=(b[sortCol]||'').toString().toLowerCase()}if(va<vb)return sortDir==='asc'?-1:1;if(va>vb)return sortDir==='asc'?1:-1;return 0});
+  }
   return list;
 }
 
@@ -586,7 +734,12 @@ function renderTable(){
   nd.style.display='none';
   if(!props.length){tbody.innerHTML='<tr><td colspan="'+COLS.length+'"><div class="empty-state"><div class="icon">🏠</div><p>No properties yet.</p><button class="btn btn-primary" onclick="openForm()">+ Add property</button></div></td></tr>';renderPanel();return}
   if(!selId||!list.find(function(p){return p.id===selId}))selId=list[0]?list[0].id:null;
-  tbody.innerHTML=list.map(function(p){
+  // Split into Active / Reference groups
+  var flt=document.getElementById('fListType').value;
+  var actives=list.filter(function(p){return(p.listType||'Active')==='Active'});
+  var refs=list.filter(function(p){return(p.listType||'Active')==='Reference'});
+  var html='';
+  function renderRow(p,groupList,gi){
     var isSel=p.id===selId,isCmp=cmpSet.has(p.id);
     var cover=(p.images&&p.images.length)?p.images.find(function(i){return i.cover})||p.images[0]:null;
     var imgSrc=cover?cover.data:'';
@@ -595,18 +748,38 @@ function renderTable(){
     var notes=p.realtorNotes||'';var notesPrev=notes.length>60?notes.substring(0,60)+'…':notes;
     var agency=p.realtorAgency?esc(p.realtorAgency):'';
     var realtorLine=esc(p.realtor||'')+(agency?' · '+agency:'');
+    var riskBadge=p.reportRiskLevel?(' <span class="risk risk-'+p.reportRiskLevel.toLowerCase().replace(/\s+/g,'-')+'">'+esc(p.reportRiskLevel)+'</span>'):'';
+    var reportPrev=p.reportSummary?(p.reportSummary.length>50?p.reportSummary.substring(0,50)+'…':p.reportSummary):'';
+    var reportLine=reportPrev?'<span class="c-report">'+riskBadge+' '+esc(reportPrev)+'</span>':'';
+    var commuteBadge=bestSRBadgeHtml(p);
+    var moveHtml='';
+    if(sortCol==='_manual'){
+      moveHtml='<td onclick="event.stopPropagation()">'+(gi>0?'<button class="move-btn" title="Move up" onclick="moveProp(\''+p.id+'\',-1)">▲</button>':'')+(gi<groupList.length-1?'<button class="move-btn" title="Move down" onclick="moveProp(\''+p.id+'\',1)">▼</button>':'')+'</td>';
+    }else{moveHtml='<td></td>'}
     return'<tr class="'+(isSel?'row-sel':'')+'" onclick="selProp(\''+p.id+'\')">'+
       '<td><button class="star-btn '+(p.favorite?'active':'')+'" onclick="event.stopPropagation();toggleFav(\''+p.id+'\')">★</button></td>'+
       '<td><input type="checkbox" class="cbx" '+(isCmp?'checked':'')+' onclick="event.stopPropagation()" onchange="toggleCmp(\''+p.id+'\')"></td>'+
       '<td>'+thm+'</td>'+
-      '<td class="c-main"><span class="c-addr" title="'+esc(p.address)+'">'+esc(p.address||'—')+'</span><span class="c-real">'+realtorLine+'</span>'+(notesPrev?'<span class="c-notes" title="'+esc(notes)+'">'+esc(notesPrev)+'</span>':'')+'</td>'+
+      '<td class="c-main"><span class="c-addr" title="'+esc(p.address)+'">'+esc(p.address||'—')+'</span><span class="c-real">'+realtorLine+'</span>'+(notesPrev?'<span class="c-notes" title="'+esc(notes)+'">'+esc(notesPrev)+'</span>':'')+commuteBadge+reportLine+'</td>'+
       '<td class="c-price">'+fp(p.askingPrice)+'</td>'+
       '<td class="c-num">'+(p.soldPrice?fp(p.soldPrice):'—')+'</td>'+
       '<td class="c-num">'+(sdlbl(p)||'—')+'</td>'+
       '<td class="c-mort">'+(mc.monthly?fmt(mc.monthly):'—')+'</td>'+
       '<td><span class="'+bclass(p.status)+'">'+esc(p.status||'New')+'</span></td>'+
-      '<td class="c-act" onclick="event.stopPropagation()"><button class="btn-icon" title="Edit" onclick="openForm(\''+p.id+'\')">✎</button><button class="btn-icon" title="Delete" onclick="delProp(\''+p.id+'\')" style="color:var(--red)">✕</button></td></tr>'
-  }).join('');
+      '<td class="c-act" onclick="event.stopPropagation()"><button class="btn-icon" title="Edit" onclick="openForm(\''+p.id+'\')">✎</button><button class="btn-icon" title="Delete" onclick="delProp(\''+p.id+'\')" style="color:var(--red)">✕</button></td>'+
+      moveHtml+'</tr>';
+  }
+  // Active section
+  if(actives.length&&(flt===''||flt==='Active')){
+    if(!flt)html+='<tr class="group-header"><td colspan="'+COLS.length+'">🏠 Active Houses<span>'+actives.length+'</span></td></tr>';
+    actives.forEach(function(p,i){html+=renderRow(p,actives,i)});
+  }
+  // Reference section
+  if(refs.length&&(flt===''||flt==='Reference')){
+    if(!flt)html+='<tr class="group-header"><td colspan="'+COLS.length+'">📋 Reference Houses<span>'+refs.length+'</span></td></tr>';
+    refs.forEach(function(p,i){html+=renderRow(p,refs,i)});
+  }
+  tbody.innerHTML=html;
   updCmpBar();renderPanel();
 }
 function selProp(id){selId=id;renderTable()}
@@ -615,6 +788,29 @@ function toggleFav(id){var p=props.find(function(x){return x.id===id});if(p){p.f
 function toggleCmp(id){if(cmpSet.has(id))cmpSet.delete(id);else if(cmpSet.size<4)cmpSet.add(id);renderTable()}
 function clearCmp(){cmpSet.clear();renderTable()}
 function updCmpBar(){document.getElementById('cmpCount').textContent=cmpSet.size;document.getElementById('cmpBar').classList.toggle('active',cmpSet.size>0)}
+
+/* Sort & reorder */
+function changeSort(val){sortCol=val;sortDir='asc';document.getElementById('fSort').value=val;renderTable()}
+
+async function moveProp(id,dir){
+  // Find in same listType group within full props array
+  var p=props.find(function(x){return x.id===id});if(!p)return;
+  var lt=p.listType||'Active';
+  // Get all same-type, sorted by sortOrder
+  var group=props.filter(function(x){return(x.listType||'Active')===lt}).sort(function(a,b){return(Number(a.sortOrder)||9999)-(Number(b.sortOrder)||9999)});
+  var idx=group.findIndex(function(x){return x.id===id});
+  if(idx<0)return;
+  var swapIdx=idx+dir;
+  if(swapIdx<0||swapIdx>=group.length)return;
+  // Swap sortOrder values
+  var tmp=group[idx].sortOrder;group[idx].sortOrder=group[swapIdx].sortOrder;group[swapIdx].sortOrder=tmp;
+  // If both were undefined, assign explicit values
+  if(!group[idx].sortOrder&&!group[swapIdx].sortOrder){group[idx].sortOrder=swapIdx;group[swapIdx].sortOrder=idx}
+  saveLocal();
+  await saveToSupabase(group[idx]);
+  await saveToSupabase(group[swapIdx]);
+  renderTable();
+}
 
 /* ============================================================
    RIGHT PANEL
@@ -634,12 +830,31 @@ function renderPanel(){
   h+='<div class="rp-sub"><span>'+esc(p.realtor||'—')+(agency?' · '+agency:'')+'</span></div>';
   h+='<div class="rp-sub"><span style="font-weight:600">'+fp(p.askingPrice)+' NOK</span></div>';
   if(p.status)h+='<div style="margin:.25rem 0"><span class="'+bclass(p.status)+'">'+esc(p.status)+'</span></div>';
+  h+='<div style="margin:.2rem 0">'+bestSRBadgeHtml(p,'lg')+'</div>';
   var sd=sdiff(p);
   if(sd){var cls=sd.d>0?'above':sd.d<0?'below':'at';var sign=sd.d>0?'+':'';h+='<div style="margin:.3rem 0;font-size:.8rem"><span class="badge badge-'+cls+'">Sold '+sign+sd.pct.toFixed(1)+'%</span> <span style="font-weight:600">'+fp(Number(p.soldPrice))+' NOK</span></div>'}
   if(p.finnLink)h+='<div class="rp-finn"><a href="'+esc(p.finnLink)+'" target="_blank" rel="noopener" class="btn-link">↗ Open on Finn.no</a></div>';
   h+='<div class="rp-sec">Realtor Notes</div>';
   h+='<div class="rp-notes'+(p.realtorNotes?'':' empty')+'">'+(p.realtorNotes?esc(p.realtorNotes):'No notes yet')+'</div>';
   if(p.pros||p.cons)h+='<div class="rp-procon"><div><div class="rp-label pro">✓ Pros</div><div>'+(p.pros?esc(p.pros):'—')+'</div></div><div><div class="rp-label con">✕ Cons</div><div>'+(p.cons?esc(p.cons):'—')+'</div></div></div>';
+  // BISS travel
+  if(p.travelTimeToBISS||p.travelModeToBISS){
+    h+='<div class="rp-sec">Travel to BISS</div>';
+    h+='<div class="rp-report">';
+    if(p.travelTimeToBISS)h+='<div class="rp-report-row"><span class="rrl">Travel time</span><span class="rrv" style="color:var(--blue);font-weight:600">'+esc(p.travelTimeToBISS)+' min</span></div>';
+    if(p.travelModeToBISS)h+='<div class="rp-report-row"><span class="rrl">Mode</span><span class="rrv">'+esc(p.travelModeToBISS)+'</span></div>';
+    h+='</div>';
+  }
+  // Report review
+  if(p.reportRiskLevel||p.reportSummary||p.reportEstimatedCosts||p.reportKeyFindings){
+    h+='<div class="rp-sec">Tilstandsrapport</div>';
+    h+='<div class="rp-report">';
+    if(p.reportRiskLevel){var rcls=p.reportRiskLevel.toLowerCase().replace(/\s+/g,'-');h+='<div class="rp-report-row"><span class="rrl">Risk level</span><span class="risk risk-'+rcls+'">'+esc(p.reportRiskLevel)+'</span></div>'}
+    if(p.reportEstimatedCosts)h+='<div class="rp-report-row"><span class="rrl">Est. costs</span><span class="rrv" style="font-weight:600">'+esc(p.reportEstimatedCosts)+'</span></div>';
+    if(p.reportSummary){h+='<div style="margin-top:.3rem"><div class="rrl" style="font-size:.66rem;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:.15rem">Summary</div><div class="rp-report-text">'+esc(p.reportSummary)+'</div></div>'}
+    if(p.reportKeyFindings){h+='<div style="margin-top:.3rem"><div class="rrl" style="font-size:.66rem;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:.15rem">Key findings</div><div class="rp-report-text">'+esc(p.reportKeyFindings)+'</div></div>'}
+    h+='</div>';
+  }
   h+='<div class="rp-sec">Mortgage</div>';
   h+='<div class="rp-hero"><div class="rp-h-lbl">Monthly Mortgage</div><div class="rp-h-val">'+fmt(mc.monthly)+'</div><div class="rp-h-sub">NOK / month</div></div>';
   h+='<div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:.3rem 0">';
@@ -653,6 +868,39 @@ function renderPanel(){
   h+=mpr('Asking',fp(Number(p.askingPrice))+' NOK')+mpr('Down ('+mpDP+'%)',fp(mc.down)+' NOK')+mpr('Loan',fp(mc.loan)+' NOK');
   h+='<hr class="rp-divider">'+mpr('Monthly',fmt(mc.monthly)+' NOK');
   h+='<div class="rp-actions"><button class="btn btn-sm" onclick="openForm(\''+p.id+'\')">Edit</button><button class="btn btn-sm" onclick="dupProp(\''+p.id+'\')">Duplicate</button></div>';
+  // School Run section
+  h+='<div class="rp-sec">🚗 School Run — BiSS Gausel</div>';
+  var runs=p.schoolRuns||[];
+  // School run rating summary
+  var srStats=getSRStats(p);
+  if(srStats){
+    var rCls=srStats.rating.toLowerCase();
+    h+='<div class="sr-summary">';
+    h+='<div class="sr-summary-row"><span class="ssl">Overall Rating</span><span class="sr-rate sr-rate-'+rCls+'">'+srStats.rating+'</span></div>';
+    if(srStats.bestMorning!==null)h+='<div class="sr-summary-row"><span class="ssl">Best morning</span><span class="ssv" style="color:var(--green)">'+srStats.bestMorning+' min</span></div>';
+    if(srStats.bestAfternoon!==null)h+='<div class="sr-summary-row"><span class="ssl">Best afternoon</span><span class="ssv" style="color:var(--green)">'+srStats.bestAfternoon+' min</span></div>';
+    if(srStats.worst!==null)h+='<div class="sr-summary-row"><span class="ssl">Worst recorded</span><span class="ssv" style="color:'+(srStats.worst>20?'var(--red)':'var(--text)')+'">'+srStats.worst+' min</span></div>';
+    h+='<div class="sr-summary-row"><span class="ssl">Avg commute</span><span class="ssv">'+srStats.avg+' min</span></div>';
+    h+='</div>';
+  }
+  if(runs.length){
+    runs.forEach(function(sr,i){
+      var dirBadge=sr.direction==='To BiSS'?'sr-badge-to':'sr-badge-from';
+      var mUrl=sr.mapsUrl||genMapsUrl(p.address,sr.direction);
+      h+='<div class="sr-panel-row">';
+      h+='<span class="'+dirBadge+'">'+esc(sr.direction||'')+'</span>';
+      h+='<span class="sr-info"><span class="sr-day">'+esc(sr.day||'')+'</span><span class="sr-time">'+esc(sr.time||'')+'</span>'+durBadgeHtml(sr.duration||'');
+      if(sr.notes)h+=' <span class="sr-note">'+esc(sr.notes)+'</span>';
+      h+='</span>';
+      h+='<a class="sr-maps" href="'+esc(mUrl)+'" target="_blank" rel="noopener" title="Open in Google Maps">🗺</a>';
+      h+='<button class="btn-icon" title="Edit" onclick="event.stopPropagation();openSRForm(\''+p.id+'\','+i+')" style="font-size:.75rem">✎</button>';
+      h+='<button class="btn-icon" title="Delete" onclick="event.stopPropagation();deleteSR(\''+p.id+'\','+i+')" style="color:var(--red);font-size:.75rem">✕</button>';
+      h+='</div>';
+    });
+  }else{
+    h+='<div class="sr-empty" style="padding:.5rem 0">No school-run times added yet.</div>';
+  }
+  h+='<div style="margin-top:.4rem"><button class="btn btn-sm btn-primary" onclick="openSRForm(\''+p.id+'\')">+ Add school run time</button></div>';
   panel.innerHTML=h;
 }
 function mpr(l,v){return'<div class="rp-mrow"><span class="ml">'+l+'</span><span class="mv">'+v+'</span></div>'}
@@ -660,7 +908,7 @@ function mpr(l,v){return'<div class="rp-mrow"><span class="ml">'+l+'</span><span
 /* ============================================================
    COMPARE
    ============================================================ */
-function openCompare(){if(cmpSet.size<2){alert('Select at least 2.');return}var ps=[];cmpSet.forEach(function(id){var p=props.find(function(x){return x.id===id});if(p)ps.push(p)});var keys=['address','realtor','realtorAgency','askingPrice','soldPrice','_diff','_mort','status','realtorNotes','pros','cons'];var labels={address:'Address',realtor:'Realtor',realtorAgency:'Agency',askingPrice:'Asking',soldPrice:'Sold',_diff:'vs Asking',_mort:'Monthly',status:'Status',realtorNotes:'Notes',pros:'Pros',cons:'Cons'};var h='<table class="ctable"><thead><tr><th></th>'+ps.map(function(p){return'<td style="font-weight:600;font-size:.8rem">'+esc(p.address||'—')+'</td>'}).join('')+'</tr></thead><tbody>';keys.forEach(function(k){h+='<tr><th>'+(labels[k]||k)+'</th>'+ps.map(function(p){if(k==='_diff')return'<td>'+(sdlbl(p)||'—')+'</td>';if(k==='_mort'){var mc=mortCalc(Number(p.askingPrice)||0,mpDP,mpRate,mpTerm);return'<td style="font-weight:600;color:var(--accent)">'+fmt(mc.monthly)+'</td>'}var v=p[k]||'—';if(k==='askingPrice'||k==='soldPrice')v=v!=='—'?fp(v):'—';return'<td>'+esc(String(v))+'</td>'}).join('')+'</tr>'});h+='</tbody></table>';document.getElementById('cmpBody').innerHTML=h;document.getElementById('cmpOv').classList.add('open')}
+function openCompare(){if(cmpSet.size<2){alert('Select at least 2.');return}var ps=[];cmpSet.forEach(function(id){var p=props.find(function(x){return x.id===id});if(p)ps.push(p)});var keys=['address','realtor','realtorAgency','askingPrice','soldPrice','_diff','_mort','status','travelTimeToBISS','reportRiskLevel','reportEstimatedCosts','realtorNotes','pros','cons'];var labels={address:'Address',realtor:'Realtor',realtorAgency:'Agency',askingPrice:'Asking',soldPrice:'Sold',_diff:'vs Asking',_mort:'Monthly',status:'Status',travelTimeToBISS:'BISS (min)',reportRiskLevel:'Report Risk',reportEstimatedCosts:'Report Cost',realtorNotes:'Notes',pros:'Pros',cons:'Cons'};var h='<table class="ctable"><thead><tr><th></th>'+ps.map(function(p){return'<td style="font-weight:600;font-size:.8rem">'+esc(p.address||'—')+'</td>'}).join('')+'</tr></thead><tbody>';keys.forEach(function(k){h+='<tr><th>'+(labels[k]||k)+'</th>'+ps.map(function(p){if(k==='_diff')return'<td>'+(sdlbl(p)||'—')+'</td>';if(k==='_mort'){var mc=mortCalc(Number(p.askingPrice)||0,mpDP,mpRate,mpTerm);return'<td style="font-weight:600;color:var(--accent)">'+fmt(mc.monthly)+'</td>'}if(k==='reportRiskLevel'&&p[k]){var rcls=p[k].toLowerCase().replace(/\s+/g,'-');return'<td><span class="risk risk-'+rcls+'">'+esc(p[k])+'</span></td>'}var v=p[k]||'—';if(k==='askingPrice'||k==='soldPrice')v=v!=='—'?fp(v):'—';return'<td>'+esc(String(v))+'</td>'}).join('')+'</tr>'});h+='</tbody></table>';document.getElementById('cmpBody').innerHTML=h;document.getElementById('cmpOv').classList.add('open')}
 function closeCmpM(){document.getElementById('cmpOv').classList.remove('open')}
 
 /* ============================================================
@@ -676,7 +924,17 @@ function buildForm(){
   var g=document.getElementById('formGrid'),h='';
   h+='<details class="impbox"><summary>📋 Paste from Finn.no</summary><div style="margin-top:.4rem"><div class="hint">Copy all text from a Finn listing, paste below, click Extract.</div><textarea id="finnPaste" placeholder="Paste text…"></textarea><div class="iacts"><button type="button" class="btn btn-sm btn-primary" onclick="doFinnParse()">Extract</button><span class="ist" id="finnSt"></span></div></div></details>';
   var lastSec='';
-  FORM_FIELDS.forEach(function(f){if(f.sec==='notes'&&lastSec!=='notes'){lastSec='notes';h+='<div class="sf-sec">Notes & Assessment</div>'}var stl=f.full?'grid-column:1/-1':'';h+='<div style="'+stl+'"><label for="f_'+f.k+'">'+f.l+'</label>';if(f.t==='textarea')h+='<textarea id="f_'+f.k+'" rows="3"></textarea>';else if(f.t==='status')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="">—</option>'+STATUSES.map(function(s){return'<option value="'+s+'">'+s+'</option>'}).join('')+'</select>';else h+='<input type="'+(f.t==='number'?'number':f.t)+'" id="f_'+f.k+'">';h+='</div>'});
+  FORM_FIELDS.forEach(function(f){
+    if(f.sec&&f.sec!==lastSec){lastSec=f.sec;var secLabels={notes:'Notes & Assessment',biss:'Travel to BISS',report:'Tilstandsrapport / Report'};h+='<div class="sf-sec">'+(secLabels[f.sec]||f.sec)+'</div>'}
+    var stl=f.full?'grid-column:1/-1':'';
+    h+='<div style="'+stl+'"><label for="f_'+f.k+'">'+f.l+'</label>';
+    if(f.t==='textarea')h+='<textarea id="f_'+f.k+'" rows="3"></textarea>';
+    else if(f.t==='status')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="">—</option>'+STATUSES.map(function(s){return'<option value="'+s+'">'+s+'</option>'}).join('')+'</select>';
+    else if(f.t==='travelmode')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="">—</option><option value="Car">Car</option><option value="Walk">Walk</option><option value="Public transport">Public transport</option><option value="Mixed">Mixed</option></select>';
+    else if(f.t==='risklevel')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="">—</option><option value="Green">Green</option><option value="Yellow">Yellow</option><option value="Yellow-red">Yellow-red</option><option value="Red">Red</option></select>';
+    else if(f.t==='listtype')h+='<select id="f_'+f.k+'" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--r);font:inherit;font-size:.82rem"><option value="Active">Active house</option><option value="Reference">Reference house</option></select>';
+    else h+='<input type="'+(f.t==='number'?'number':f.t)+'" id="f_'+f.k+'">';
+    h+='</div>'});
   h+='<div class="sf-sec">Images</div>';
   h+='<div class="img-up" id="imgDrop" onclick="document.getElementById(\'imgFile\').click()"><div class="dt">Drop images or <strong>click to browse</strong></div><input type="file" id="imgFile" accept="image/*" multiple style="display:none" onchange="handleImgs(this.files)"></div>';
   h+='<div class="img-warn">⚠ Images uploaded to shared storage. Both users see the same photos.</div>';
@@ -699,7 +957,7 @@ async function handleImgs(files){
 function renderImgTh(){var c=document.getElementById('imgThumbs');if(!c)return;c.innerHTML=tempImgs.map(function(img,i){return'<div class="img-th'+(img.cover?' cover':'')+'" onclick="setImgCover('+i+')"><img src="'+esc(img.data)+'"><button class="img-del" onclick="event.stopPropagation();rmImg('+i+')">✕</button>'+(img.cover?'<div class="img-ctag">Cover</div>':'')+'</div>'}).join('')}
 function setImgCover(i){tempImgs.forEach(function(img,j){img.cover=j===i});renderImgTh()}
 function rmImg(i){var removed=tempImgs.splice(i,1)[0];if(removed)deleteStorageImage(removed);if(tempImgs.length&&!tempImgs.find(function(x){return x.cover}))tempImgs[0].cover=true;renderImgTh()}
-function openForm(id){editId=id||null;document.getElementById('formTitle').textContent=id?'Edit Property':'Add Property';buildForm();tempImgs=[];if(id){var p=props.find(function(x){return x.id===id});if(p){FORM_FIELDS.forEach(function(f){var el=document.getElementById('f_'+f.k);if(el)el.value=p[f.k]||''});tempImgs=(p.images||[]).map(function(i){return{id:i.id,name:i.name,data:i.data,path:i.path,cover:i.cover}})}}else{document.getElementById('f_dateAdded').value=new Date().toISOString().slice(0,10);document.getElementById('f_status').value='New'}renderImgTh();document.getElementById('formOv').classList.add('open')}
+function openForm(id){editId=id||null;document.getElementById('formTitle').textContent=id?'Edit Property':'Add Property';buildForm();tempImgs=[];if(id){var p=props.find(function(x){return x.id===id});if(p){FORM_FIELDS.forEach(function(f){var el=document.getElementById('f_'+f.k);if(el)el.value=p[f.k]||''});tempImgs=(p.images||[]).map(function(i){return{id:i.id,name:i.name,data:i.data,path:i.path,cover:i.cover}})}}else{document.getElementById('f_dateAdded').value=new Date().toISOString().slice(0,10);document.getElementById('f_status').value='New';document.getElementById('f_listType').value='Active'}renderImgTh();document.getElementById('formOv').classList.add('open')}
 function closeForm(){document.getElementById('formOv').classList.remove('open');editId=null;tempImgs=[]}
 async function saveProp(){
   var btn=document.getElementById('saveBtn');btn.textContent='Saving…';btn.disabled=true;
@@ -771,13 +1029,366 @@ function dl(name,content,type){var b=new Blob([content],{type:type});var a=docum
 function numF(id){return Number(String(document.getElementById(id).value).replace(/[^\d.,-]/g,'').replace(',','.'))||0}
 function setFDP(pct){var p=numF('mcPrice');document.getElementById('mcDown').value=Math.round(p*pct);calcFull()}
 function setFT(y){document.getElementById('mcTerm').value=y;calcFull()}
-function calcFull(){var price=numF('mcPrice'),down=numF('mcDown'),rate=numF('mcRate')/100,term=numF('mcTerm');var felles=numF('mcFelles'),elec=numF('mcElec'),ins=numF('mcIns'),maint=numF('mcMaint');var rent=numF('mcRent'),coRent=numF('mcCoRent'),div=numF('mcDiv');var loan=Math.max(price-down,0),dpPct=price>0?((down/price)*100):0;var mr=rate/12,n=term*12,monthly=0;if(mr>0&&n>0)monthly=loan*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)monthly=loan/n;var totalInt=0;if(mr>0&&n>0){var bal=loan;for(var i=0;i<n;i++){var mi=bal*mr;totalInt+=mi;bal-=(monthly-mi>0?monthly-mi:0)}}var costs=monthly+felles+elec+ins+maint,offsets=rent+coRent+div,net=costs-offsets;document.getElementById('mcResults').innerHTML=mcr('Loan',fp(loan))+mcr('Down',dpPct.toFixed(1)+'%')+mcr('Monthly Mortgage',fp(Math.round(monthly)))+mcr('Total Monthly',fp(Math.round(costs)))+mcr('Offsets',fp(Math.round(offsets)),'green')+mcr('Net Monthly',fp(Math.round(net)),net>0?'red':'green')+mcr('Total Interest ('+term+'yr)',fp(Math.round(totalInt)));var comp=document.getElementById('mcComp'),steps=[-1e6,-5e5,0,5e5,1e6];comp.innerHTML='<thead><tr><th style="text-align:left">Price</th><th>Down</th><th>Loan</th><th>Monthly</th><th>Net</th></tr></thead><tbody>'+steps.map(function(s){var cp=price+s;if(cp<=0)return'';var cd=Math.round(cp*(dpPct/100)),cl=cp-cd,cm=0;if(mr>0&&n>0)cm=cl*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)cm=cl/n;var cn=cm+felles+elec+ins+maint-offsets;return'<tr class="'+(s===0?'hl':'')+'"><td>'+fp(cp)+'</td><td>'+fp(cd)+'</td><td>'+fp(cl)+'</td><td>'+fp(Math.round(cm))+'</td><td>'+fp(Math.round(cn))+'</td></tr>'}).join('')+'</tbody>'}
+function calcFull(){var price=numF('mcPrice'),down=numF('mcDown'),rate=numF('mcRate')/100,term=numF('mcTerm');var felles=numF('mcFelles'),elec=numF('mcElec'),ins=numF('mcIns'),maint=numF('mcMaint');var rent=numF('mcRent'),coRent=numF('mcCoRent'),div=numF('mcDiv');var loan=Math.max(price-down,0),dpPct=price>0?((down/price)*100):0;var mr=rate/12,n=term*12,monthly=0;if(mr>0&&n>0)monthly=loan*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)monthly=loan/n;var totalInt=0;if(mr>0&&n>0){var bal=loan;for(var i=0;i<n;i++){var mi=bal*mr;totalInt+=mi;bal-=(monthly-mi>0?monthly-mi:0)}}var costs=monthly+felles+elec+ins+maint,offsets=rent+coRent+div,net=costs-offsets;document.getElementById('mcResults').innerHTML=mcr('Loan',fp(loan))+mcr('Down',dpPct.toFixed(1)+'%')+mcr('Monthly Mortgage',fp(Math.round(monthly)))+mcr('Total Monthly',fp(Math.round(costs)))+mcr('Offsets',fp(Math.round(offsets)),'green')+mcr('Net Monthly',fp(Math.round(net)),net>0?'red':'green')+mcr('Total Interest ('+term+'yr)',fp(Math.round(totalInt)));var comp=document.getElementById('mcComp'),steps=[-1e6,-5e5,0,5e5,1e6];comp.innerHTML='<thead><tr><th style="text-align:left">Price</th><th>Down</th><th>Loan</th><th>Monthly</th><th>Net</th></tr></thead><tbody>'+steps.map(function(s){var cp=price+s;if(cp<=0)return'';var cd=Math.round(cp*(dpPct/100)),cl=cp-cd,cm=0;if(mr>0&&n>0)cm=cl*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1);else if(n>0)cm=cl/n;var cn=cm+felles+elec+ins+maint-offsets;return'<tr class="'+(s===0?'hl':'')+'"><td>'+fp(cp)+'</td><td>'+fp(cd)+'</td><td>'+fp(cl)+'</td><td>'+fp(Math.round(cm))+'</td><td>'+fp(Math.round(cn))+'</td></tr>'}).join('')+'</tbody>';renderPriceLadder()}
 function mcr(l,v,cls){return'<div class="mc-res"><span class="mc-rl">'+l+'</span><span class="mc-rv'+(cls?' '+cls:'')+'">'+v+'</span></div>'}
+
+function renderPriceLadder(){
+  var rates=[5,5.5,6,6.5,7];
+  var prices=[];for(var p=7000000;p<=11000000;p+=500000)prices.push(p);
+  var dpPct=10,term=25;
+  var h='<thead><tr><th style="text-align:left">Price</th>';
+  rates.forEach(function(r){h+='<th>'+r.toFixed(1)+'%</th>'});
+  h+='</tr></thead><tbody>';
+  prices.forEach(function(price){
+    h+='<tr><td>'+fp(price)+'</td>';
+    rates.forEach(function(rate){
+      var loan=price-Math.round(price*(dpPct/100));
+      var mr=rate/100/12,n=term*12;
+      var m=mr>0?loan*mr*Math.pow(1+mr,n)/(Math.pow(1+mr,n)-1):loan/n;
+      h+='<td>'+fmt(Math.round(m))+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody>';
+  document.getElementById('priceLadder').innerHTML=h;
+}
+
+/* ============================================================
+   SCHOOL RUN
+   ============================================================ */
+var BISS_ADDRESS = 'Gauselbakken 107, 4032 Stavanger, Norway';
+var SR_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Weekend'];
+var srEditPropId = null, srEditIdx = -1; // -1 = adding new
+var srSortCol = 'address', srSortDir = 'asc';
+
+function genMapsUrl(propAddr, direction) {
+  if (!propAddr) return '';
+  var origin, dest;
+  if (direction === 'From BiSS') { origin = BISS_ADDRESS; dest = propAddr; }
+  else { origin = propAddr; dest = BISS_ADDRESS; }
+  return 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(origin) + '&destination=' + encodeURIComponent(dest) + '&travelmode=driving';
+}
+
+function openSRForm(propId, idx) {
+  srEditPropId = propId;
+  srEditIdx = (idx !== undefined && idx !== null) ? idx : -1;
+  var isEdit = srEditIdx >= 0;
+  document.getElementById('srFormTitle').textContent = isEdit ? 'Edit School Run Time' : 'Add School Run Time';
+  var p = props.find(function(x) { return x.id === propId; });
+  var sr = isEdit && p && p.schoolRuns ? p.schoolRuns[srEditIdx] : null;
+  var g = document.getElementById('srFormGrid');
+  g.innerHTML =
+    '<div><label>Direction</label><select id="sr_direction"><option value="To BiSS"' + (sr && sr.direction === 'To BiSS' ? ' selected' : '') + '>To BiSS</option><option value="From BiSS"' + (sr && sr.direction === 'From BiSS' ? ' selected' : '') + '>From BiSS</option></select></div>' +
+    '<div><label>Day</label><select id="sr_day">' + SR_DAYS.map(function(d) { return '<option' + (sr && sr.day === d ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select></div>' +
+    '<div><label>Time</label><input type="text" id="sr_time" placeholder="e.g. 07:30, 16:00" value="' + (sr ? esc(sr.time) : '') + '"></div>' +
+    '<div><label>Duration</label><input type="text" id="sr_duration" placeholder="e.g. 7–9 min, 12 min" value="' + (sr ? esc(sr.duration) : '') + '"></div>' +
+    '<div class="full"><label>Notes</label><input type="text" id="sr_notes" placeholder="e.g. heavy traffic, via motorway" value="' + (sr ? esc(sr.notes || '') : '') + '"></div>' +
+    '<div class="full"><label>Google Maps Link (auto-generated if empty)</label><input type="text" id="sr_mapsUrl" placeholder="Leave empty for auto" value="' + (sr && sr.mapsUrl ? esc(sr.mapsUrl) : '') + '"></div>';
+  document.getElementById('srFormOv').classList.add('open');
+}
+
+function closeSRForm() { document.getElementById('srFormOv').classList.remove('open'); srEditPropId = null; srEditIdx = -1; }
+
+async function saveSREntry() {
+  var p = props.find(function(x) { return x.id === srEditPropId; });
+  if (!p) return;
+  if (!p.schoolRuns) p.schoolRuns = [];
+  var entry = {
+    direction: document.getElementById('sr_direction').value,
+    day: document.getElementById('sr_day').value,
+    time: document.getElementById('sr_time').value.trim(),
+    duration: document.getElementById('sr_duration').value.trim(),
+    notes: document.getElementById('sr_notes').value.trim(),
+    mapsUrl: document.getElementById('sr_mapsUrl').value.trim()
+  };
+  if (!entry.time && !entry.duration) { alert('Please enter at least a time or duration.'); return; }
+  // Auto-generate maps URL if empty
+  if (!entry.mapsUrl) entry.mapsUrl = genMapsUrl(p.address, entry.direction);
+  if (srEditIdx >= 0 && srEditIdx < p.schoolRuns.length) {
+    p.schoolRuns[srEditIdx] = entry;
+  } else {
+    p.schoolRuns.push(entry);
+  }
+  await saveToSupabase(p);
+  saveLocal();
+  closeSRForm();
+  renderPanel();
+}
+
+async function deleteSR(propId, idx) {
+  if (!confirm('Delete this school run entry?')) return;
+  var p = props.find(function(x) { return x.id === propId; });
+  if (!p || !p.schoolRuns) return;
+  p.schoolRuns.splice(idx, 1);
+  await saveToSupabase(p);
+  saveLocal();
+  renderPanel();
+}
+
+/* ============================================================
+   SCHOOL RUN SCORING
+   ============================================================ */
+function parseDuration(dur) {
+  if (!dur) return null;
+  var s = dur.replace(/\s*min\s*/gi, '').trim();
+  // Range: "7–9", "18-22", "7 – 9"
+  var rangeMatch = s.match(/^(\d+)\s*[–\-]\s*(\d+)$/);
+  if (rangeMatch) return (parseFloat(rangeMatch[1]) + parseFloat(rangeMatch[2])) / 2;
+  // Single number: "12", "7"
+  var singleMatch = s.match(/^(\d+(?:\.\d+)?)$/);
+  if (singleMatch) return parseFloat(singleMatch[1]);
+  return null;
+}
+
+function calcSRPriority(sr) {
+  var d = sr.day || '', dir = sr.direction || '', t = sr.time || '';
+  var isMon = d === 'Monday';
+  var isMorning = t && parseInt(t) < 12;
+  var isAfternoon = t && parseInt(t) >= 12;
+  var isWeekend = d === 'Weekend';
+  if (isWeekend) return 'Low';
+  if (isMon && ((isMorning && t.indexOf('07:30') >= 0) || (isAfternoon && t.indexOf('16:30') >= 0))) return 'High';
+  if (isMon) return 'High';
+  return 'Medium';
+}
+
+function rateMinutes(mins) {
+  if (mins === null) return null;
+  if (mins <= 10) return 'Excellent';
+  if (mins <= 15) return 'Good';
+  if (mins <= 20) return 'Acceptable';
+  return 'Poor';
+}
+
+function getSRRating(p) {
+  var runs = p.schoolRuns || [];
+  if (!runs.length) return '';
+  var parsed = runs.map(function(sr) { return parseDuration(sr.duration); }).filter(function(v) { return v !== null; });
+  if (!parsed.length) return '';
+  // Weighted average: give more weight to high-priority runs
+  var totalWeight = 0, weightedSum = 0;
+  runs.forEach(function(sr) {
+    var m = parseDuration(sr.duration);
+    if (m === null) return;
+    var pri = calcSRPriority(sr);
+    var w = pri === 'High' ? 3 : pri === 'Medium' ? 2 : 1;
+    weightedSum += m * w;
+    totalWeight += w;
+  });
+  if (!totalWeight) return '';
+  var avg = weightedSum / totalWeight;
+  // Penalty for any run > 30 min
+  var hasOver30 = parsed.some(function(v) { return v > 30; });
+  if (hasOver30) return 'Poor';
+  return rateMinutes(avg);
+}
+
+function getSRStats(p) {
+  var runs = p.schoolRuns || [];
+  if (!runs.length) return null;
+  var mornings = [], afternoons = [], all = [];
+  runs.forEach(function(sr) {
+    var m = parseDuration(sr.duration);
+    if (m === null) return;
+    all.push(m);
+    var t = sr.time || '';
+    if (t && parseInt(t) < 12) mornings.push(m);
+    else if (t) afternoons.push(m);
+  });
+  if (!all.length) return null;
+  var bestMorning = mornings.length ? Math.round(Math.min.apply(null, mornings)) : null;
+  var bestAfternoon = afternoons.length ? Math.round(Math.min.apply(null, afternoons)) : null;
+  var worst = Math.round(Math.max.apply(null, all));
+  var avg = Math.round(all.reduce(function(a, b) { return a + b; }, 0) / all.length);
+  var rating = getSRRating(p);
+  return { bestMorning: bestMorning, bestAfternoon: bestAfternoon, worst: worst, avg: avg, rating: rating };
+}
+
+/* Duration color coding: 0-10=green, 11-15=yellow, 16-20=orange, >20=red */
+function durColorClass(dur) {
+  var mins = parseDuration(dur);
+  if (mins === null) return '';
+  if (mins <= 10) return 'green';
+  if (mins <= 15) return 'yellow';
+  if (mins <= 20) return 'orange';
+  return 'red';
+}
+
+function durBadgeHtml(dur) {
+  var cls = durColorClass(dur);
+  if (!cls) return '<span style="color:var(--text2)">' + esc(dur) + '</span>';
+  return '<span class="dur-badge dur-' + cls + '">' + esc(dur) + '</span>';
+}
+
+function getSRDotColor(p) {
+  var runs = p.schoolRuns || [];
+  if (!runs.length) return '';
+  var mins = runs.map(function(sr) { return parseDuration(sr.duration); }).filter(function(v) { return v !== null; });
+  if (!mins.length) return '';
+  var avg = mins.reduce(function(a, b) { return a + b; }, 0) / mins.length;
+  if (avg <= 10) return 'green';
+  if (avg <= 15) return 'yellow';
+  if (avg <= 20) return 'orange';
+  return 'red';
+}
+
+/* Best school run selector — picks most relevant entry for badge display */
+function getBestSR(p) {
+  var runs = p.schoolRuns;
+  if (!runs || !runs.length) return null;
+  // Priority 1: Monday + To BiSS + 07:30
+  var best = runs.find(function(sr) { return sr.day === 'Monday' && sr.direction === 'To BiSS' && (sr.time || '').indexOf('07:30') >= 0; });
+  if (best && best.duration) return best;
+  // Priority 2: any To BiSS morning (time < 12), pick shortest
+  var mornings = runs.filter(function(sr) { return sr.direction === 'To BiSS' && sr.time && parseInt(sr.time) < 12 && parseDuration(sr.duration) !== null; });
+  if (mornings.length) { mornings.sort(function(a, b) { return parseDuration(a.duration) - parseDuration(b.duration); }); return mornings[0]; }
+  // Priority 3: any To BiSS, pick shortest
+  var toBiss = runs.filter(function(sr) { return sr.direction === 'To BiSS' && parseDuration(sr.duration) !== null; });
+  if (toBiss.length) { toBiss.sort(function(a, b) { return parseDuration(a.duration) - parseDuration(b.duration); }); return toBiss[0]; }
+  // Priority 4: any entry with parseable duration, pick shortest
+  var any = runs.filter(function(sr) { return parseDuration(sr.duration) !== null; });
+  if (any.length) { any.sort(function(a, b) { return parseDuration(a.duration) - parseDuration(b.duration); }); return any[0]; }
+  return null;
+}
+
+function bestSRBadgeHtml(p, size) {
+  var sr = getBestSR(p);
+  if (!sr) {
+    if (!p.schoolRuns || !p.schoolRuns.length) return '<span class="sr-commute sr-commute-none' + (size === 'lg' ? ' sr-commute-lg' : '') + '">🚗 No school run</span>';
+    return '';
+  }
+  var cls = durColorClass(sr.duration);
+  if (!cls) cls = 'grey';
+  return '<span class="sr-commute sr-commute-' + cls + (size === 'lg' ? ' sr-commute-lg' : '') + '">🚗 BiSS ' + esc(sr.duration) + '</span>';
+}
+
+/* School Run Compare grid */
+function renderSRCompare() {
+  // Populate property filter
+  var propSel = document.getElementById('srfProp');
+  var curProp = propSel.value;
+  propSel.innerHTML = '<option value="">All Properties</option>' + props.filter(function(p) { return p.schoolRuns && p.schoolRuns.length; }).map(function(p) { return '<option value="' + p.id + '">' + esc(p.address || '—') + '</option>'; }).join('');
+  propSel.value = curProp;
+
+  // Gather all rows with scoring
+  var rows = [];
+  props.forEach(function(p) {
+    if (!p.schoolRuns || !p.schoolRuns.length) return;
+    p.schoolRuns.forEach(function(sr) {
+      var mins = parseDuration(sr.duration);
+      var priority = calcSRPriority(sr);
+      var rating = mins !== null ? rateMinutes(mins) : null;
+      rows.push({
+        propId: p.id,
+        address: p.address || '—',
+        area: p.municipality || '—',
+        direction: sr.direction || '',
+        day: sr.day || '',
+        time: sr.time || '',
+        duration: sr.duration || '',
+        parsedMins: mins,
+        priority: priority,
+        rating: rating,
+        notes: sr.notes || '',
+        mapsUrl: sr.mapsUrl || genMapsUrl(p.address, sr.direction)
+      });
+    });
+  });
+
+  // Apply filters
+  var fDir = document.getElementById('srfDir').value;
+  var fDay = document.getElementById('srfDay').value;
+  var fProp = document.getElementById('srfProp').value;
+  var fTime = document.getElementById('srfTime').value;
+  var fRating = document.getElementById('srfRating').value;
+  if (fDir) rows = rows.filter(function(r) { return r.direction === fDir; });
+  if (fDay) rows = rows.filter(function(r) { return r.day === fDay; });
+  if (fProp) rows = rows.filter(function(r) { return r.propId === fProp; });
+  if (fTime === 'morning') rows = rows.filter(function(r) { return r.time && parseInt(r.time) < 12; });
+  if (fTime === 'afternoon') rows = rows.filter(function(r) { return r.time && parseInt(r.time) >= 12; });
+  if (fRating === 'poor') rows = rows.filter(function(r) { return r.rating === 'Poor' || (r.parsedMins !== null && r.parsedMins > 20); });
+  if (fRating === 'acceptable') rows = rows.filter(function(r) { return r.rating && r.rating !== 'Poor'; });
+  if (fRating === 'good') rows = rows.filter(function(r) { return r.rating === 'Good' || r.rating === 'Excellent'; });
+  if (fRating === 'excellent') rows = rows.filter(function(r) { return r.rating === 'Excellent'; });
+
+  // Sort
+  var dayOrder = {Monday:0,Tuesday:1,Wednesday:2,Thursday:3,Friday:4,Weekend:5};
+  var rateOrder = {Excellent:0,Good:1,Acceptable:2,Poor:3};
+  var priOrder = {High:0,Medium:1,Low:2};
+  rows.sort(function(a, b) {
+    var va, vb;
+    if (srSortCol === 'day') { va = dayOrder[a.day] !== undefined ? dayOrder[a.day] : 9; vb = dayOrder[b.day] !== undefined ? dayOrder[b.day] : 9; }
+    else if (srSortCol === 'parsedMins') { va = a.parsedMins !== null ? a.parsedMins : 9999; vb = b.parsedMins !== null ? b.parsedMins : 9999; }
+    else if (srSortCol === 'rating') { va = rateOrder[a.rating] !== undefined ? rateOrder[a.rating] : 9; vb = rateOrder[b.rating] !== undefined ? rateOrder[b.rating] : 9; }
+    else if (srSortCol === 'priority') { va = priOrder[a.priority] !== undefined ? priOrder[a.priority] : 9; vb = priOrder[b.priority] !== undefined ? priOrder[b.priority] : 9; }
+    else { va = (a[srSortCol] || '').toLowerCase(); vb = (b[srSortCol] || '').toLowerCase(); }
+    if (va < vb) return srSortDir === 'asc' ? -1 : 1;
+    if (va > vb) return srSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  var tbl = document.getElementById('srCompareTable');
+  var nd = document.getElementById('srNoData');
+  if (!rows.length) { tbl.innerHTML = ''; nd.style.display = 'block'; return; }
+  nd.style.display = 'none';
+
+  var cols = [
+    {k:'address',l:'Property'},{k:'area',l:'Area'},{k:'direction',l:'Dir'},
+    {k:'day',l:'Day'},{k:'time',l:'Time'},{k:'duration',l:'Duration'},
+    {k:'parsedMins',l:'Min'},{k:'priority',l:'Priority'},{k:'rating',l:'Rating'},
+    {k:'notes',l:'Notes'},{k:'_maps',l:'Maps'}
+  ];
+
+  var head = '<thead><tr>' + cols.map(function(c) {
+    if (c.k === '_maps') return '<th>Maps</th>';
+    var sorted = srSortCol === c.k;
+    var arrow = '<span class="sa">' + (sorted ? (srSortDir === 'asc' ? '▲' : '▼') : '▲') + '</span>';
+    return '<th class="' + (sorted ? 'sorted' : '') + '" onclick="srSort(\'' + c.k + '\')">' + c.l + arrow + '</th>';
+  }).join('') + '</tr></thead>';
+
+  var body = '<tbody>' + rows.map(function(r) {
+    var dirBadge = r.direction === 'To BiSS' ? 'sr-badge-to' : 'sr-badge-from';
+    var priBadge = 'sr-pri sr-pri-' + r.priority.toLowerCase();
+    var rateBadge = r.rating ? 'sr-rate sr-rate-' + r.rating.toLowerCase() : '';
+    var minsDisplay = r.parsedMins !== null ? Math.round(r.parsedMins) : '—';
+    var minsColor = r.parsedMins !== null ? (r.parsedMins > 30 ? 'color:var(--red);font-weight:700' : r.parsedMins > 20 ? 'color:var(--orange);font-weight:600' : 'color:var(--accent);font-weight:600') : '';
+    return '<tr>' +
+      '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.address) + '</td>' +
+      '<td>' + esc(r.area) + '</td>' +
+      '<td><span class="' + dirBadge + '">' + esc(r.direction) + '</span></td>' +
+      '<td>' + esc(r.day) + '</td>' +
+      '<td style="font-weight:600">' + esc(r.time) + '</td>' +
+      '<td style="color:var(--accent);font-weight:600">' + durBadgeHtml(r.duration) + '</td>' +
+      '<td style="' + minsColor + '">' + minsDisplay + '</td>' +
+      '<td><span class="' + priBadge + '">' + esc(r.priority) + '</span></td>' +
+      '<td>' + (rateBadge ? '<span class="' + rateBadge + '">' + esc(r.rating) + '</span>' : '—') + '</td>' +
+      '<td style="color:var(--text2);font-size:.7rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.notes) + '</td>' +
+      '<td><a class="sr-maps" href="' + esc(r.mapsUrl) + '" target="_blank" rel="noopener">🗺</a></td>' +
+    '</tr>';
+  }).join('') + '</tbody>';
+
+  tbl.innerHTML = head + body;
+}
+
+function srSort(k) {
+  if (srSortCol === k) srSortDir = srSortDir === 'asc' ? 'desc' : 'asc';
+  else { srSortCol = k; srSortDir = 'asc'; }
+  renderSRCompare();
+}
+
+function clearSRFilters() {
+  document.getElementById('srfDir').value = '';
+  document.getElementById('srfDay').value = '';
+  document.getElementById('srfProp').value = '';
+  document.getElementById('srfTime').value = '';
+  document.getElementById('srfRating').value = '';
+  renderSRCompare();
+}
 
 /* ============================================================
    KEYBOARD
    ============================================================ */
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeForm();closeCmpM();document.getElementById('lb').classList.remove('open')}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeForm();closeCmpM();closeSRForm();document.getElementById('lb').classList.remove('open')}});
 
 /* ============================================================
    INIT
@@ -788,6 +1399,7 @@ document.getElementById('mcPrice').value='7500000';
 document.getElementById('mcDown').value='750000';
 document.getElementById('mcRate').value='7';
 document.getElementById('mcTerm').value='30';
+renderPriceLadder();
 </script>
 </body>
 </html>
